@@ -1,0 +1,31 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+    
+    <services>
+        <defaults public="false" />
+        
+        <service public="true" id="maker.renderer.form_filter_type_renderer" class="Kematjaya\MakerBundle\Renderer\FormFilterTypeRenderer">
+            <argument type="service" id="maker.generator" />
+        </service>
+        
+        <service public="true" id="maker.command.make_kmj_filter" class="Kematjaya\MakerBundle\Maker\MakeFilter">
+            <argument type="service" id="maker.doctrine_helper" />
+            <argument type="service" id="maker.renderer.form_filter_type_renderer" />
+            
+            <tag name="maker.command"/>
+        </service>
+        
+        <service public="true" id="maker.command.make_kmj_crud" class="Kematjaya\MakerBundle\Maker\MakeKmjCrud">
+            <argument type="service" id="maker.doctrine_helper" />
+            <argument type="service" id="maker.renderer.form_filter_type_renderer" />
+            <argument type="service" id="maker.renderer.form_type_renderer" />
+            <argument type="service" id="maker.file_manager" />
+            
+            <tag name="maker.command"/>
+        </service>
+        
+    </services>
+</container>
