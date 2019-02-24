@@ -6,14 +6,14 @@
  * @author Nur Hidayatullah <kematjaya0@gmail.com>
  */
 
-namespace Kematjaya\MakerBundle\DependencyInjection;
+namespace Kematjaya\CrudMakerBundle\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\Config\FileLocator;
 
-class MakerExtension extends Extension {
+class CrudMakerExtension extends Extension {
     
     public function load(array $configs, ContainerBuilder $container)
     {

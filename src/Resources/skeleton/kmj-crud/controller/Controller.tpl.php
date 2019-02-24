@@ -5,7 +5,7 @@ namespace <?= $namespace ?>;
 use <?= $entity_full_class_name ?>;
 use <?= $form_full_class_name ?>;
 use <?= $form_filter_full_class_name ?>;
-use Kematjaya\MakerBundle\Controller\Base\BaseController;
+use Kematjaya\CrudMakerBundle\Controller\Base\BaseController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Form\Form;

@@ -6,13 +6,18 @@
  * @author Nur Hidayatullah <kematjaya0@gmail.com>
  */
 
-namespace Kematjaya\MakerBundle\Maker;
+namespace Kematjaya\CrudMakerBundle\Maker;
 
-use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
-use Kematjaya\MakerBundle\Renderer\FormFilterTypeRenderer;
+
+use Kematjaya\CrudMakerBundle\Renderer\FormFilterTypeRenderer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Question\Question;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Validator\Validation;
+use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
 use Symfony\Bundle\MakerBundle\InputConfiguration;
@@ -21,16 +26,12 @@ use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer;
 use Symfony\Bundle\MakerBundle\Validator;
 use Symfony\Bundle\MakerBundle\Str;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Validator\Validation;
+use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
+use Symfony\Bundle\MakerBundle\FileManager;
 use Symfony\Bundle\TwigBundle\TwigBundle;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
-use Symfony\Component\Security\Csrf\CsrfTokenManager;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
-use Symfony\Component\Console\Question\Question;
 use Doctrine\Common\Inflector\Inflector;
-use Symfony\Bundle\MakerBundle\FileManager;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 
 class MakeKmjCrud extends AbstractMaker{
     

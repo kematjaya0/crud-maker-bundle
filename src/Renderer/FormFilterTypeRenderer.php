@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Kematjaya\MakerBundle\Renderer;
+namespace Kematjaya\CrudMakerBundle\Renderer;
 
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Str;

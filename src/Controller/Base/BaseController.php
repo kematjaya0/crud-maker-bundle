@@ -6,7 +6,7 @@
  * @author Nur Hidayatullah <kematjaya0@gmail.com>
  */
 
-namespace Kematjaya\MakerBundle\Controller\Base;
+namespace Kematjaya\CrudMakerBundle\Controller\Base;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

@@ -6,12 +6,12 @@
  * @author Nur Hidayatullah <kematjaya0@gmail.com>
  */
 
-namespace Kematjaya\MakerBundle;
+namespace Kematjaya\CrudMakerBundle;
 
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
-class MakerBundle extends Bundle {
+class CrudMakerBundle extends Bundle {
     
     public function build(ContainerBuilder $container)
     {

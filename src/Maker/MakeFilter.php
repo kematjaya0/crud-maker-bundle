@@ -6,22 +6,22 @@
  * @author Nur Hidayatullah <kematjaya0@gmail.com>
  */
 
-namespace Kematjaya\MakerBundle\Maker;
+namespace Kematjaya\CrudMakerBundle\Maker;
 
+use Kematjaya\MakerBundle\Renderer\FormFilterTypeRenderer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Question\Question;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
-use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Symfony\Bundle\MakerBundle\InputConfiguration;
 use Symfony\Bundle\MakerBundle\DependencyBuilder;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
-use Kematjaya\MakerBundle\Renderer\FormFilterTypeRenderer;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Bundle\MakerBundle\Str;
-use Symfony\Component\Console\Question\Question;
 use Symfony\Bundle\MakerBundle\Validator;
+use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 
 class MakeFilter extends AbstractMaker{
     
