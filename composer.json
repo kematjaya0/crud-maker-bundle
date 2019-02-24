@@ -1,6 +1,6 @@
 {
     "name": "kematjaya/crud-maker-bundle",
-    "description": "cryd generator base on symfony maker-bundle",
+    "description": "crud generator base on symfony maker-bundle",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -11,9 +11,9 @@
     ],
     "minimum-stability": "dev",
     "require": {
-		"php": ">=7.0"
-	},
-	"autoload": {
+	"php": ">=7.0"
+    },
+    "autoload": {
         "psr-4": {
             "Kematjaya\\CrudMakerBundle\\": "src/"
         }
