@@ -6,9 +6,8 @@
     
     <services>
         <defaults public="false" />
-        
         <service public="true" id="maker.renderer.form_filter_type_renderer" class="Kematjaya\CrudMakerBundle\Renderer\FormFilterTypeRenderer">
-            <argument type="service" id="maker.generator" />
+            <argument type="service" id="kematjaya.maker_generator" />
         </service>
         
         <service public="true" id="maker.command.make_kmj_filter" class="Kematjaya\CrudMakerBundle\Maker\MakeFilter">
