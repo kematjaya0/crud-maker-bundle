@@ -11,7 +11,6 @@ namespace Kematjaya\CrudMakerBundle\Controller\Base;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Lexik\Bundle\FormFilterBundle\Filter\FilterBuilderUpdaterInterface;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Query;
 use Pagerfanta\Adapter\DoctrineORMAdapter;
@@ -71,8 +70,8 @@ class BaseController extends AbstractController{
         return $this->get('session')->get($name, []);
     }
     
-    public function getFilterAdapter(): FilterBuilderUpdaterInterface
+    public function getFilterAdapter()
     {
-        return $this->get('lexik_form_filter.query_builder_updater');
+        return $this->container->get('kematjaya.form_filter_query_builder');
     }
 }

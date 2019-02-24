@@ -8,7 +8,7 @@
 
 namespace Kematjaya\CrudMakerBundle\Maker;
 
-use Kematjaya\MakerBundle\Renderer\FormFilterTypeRenderer;
+use Kematjaya\CrudMakerBundle\Renderer\FormFilterTypeRenderer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
