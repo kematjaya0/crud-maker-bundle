@@ -1,36 +1,40 @@
-<?php
+<?= "<?php\n" ?>
 
-/**
- * Description of BaseController
- *
- * @author Nur Hidayatullah <kematjaya0@gmail.com>
- */
-
-namespace Kematjaya\CrudMakerBundle\Controller\Base;
+namespace <?= $namespace ?>;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Lexik\Bundle\FormFilterBundle\Filter\FilterBuilderUpdaterInterface;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Query;
 use Pagerfanta\Adapter\DoctrineORMAdapter;
 use Pagerfanta\Pagerfanta;
 
-
-class BaseController extends AbstractController{
+class <?= $class_name ?> extends AbstractController{
     
     /**
      * @var limit
      */
     private $limit = 10;
     
+    private $translation;
+    
+    private $filterBuilder;
+    
+    public function __construct(
+            TranslatorInterface $translation, 
+            FilterBuilderUpdaterInterface $filterBuilder) {
+        $this->translation = $translation;
+        $this->filterBuilder = $filterBuilder;
+    }
     
     /**
      * @return Symfony\Component\Translation\TranslatorInterface
      */
     public function getTranslator(): TranslatorInterface
     {
-        return $this->get('translator');
+        return $this->translation;
     }
     
     public function getQueryBuilder(string $entityClassName): QueryBuilder
@@ -72,6 +76,6 @@ class BaseController extends AbstractController{
     
     public function getFilterAdapter()
     {
-        return $this->container->get('kematjaya.form_filter_query_builder');
+        return $this->filterBuilder;
     }
 }

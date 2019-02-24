@@ -134,6 +134,12 @@ class MakeKmjCrud extends AbstractMaker{
             ];
         }
 
+        $baseControllerClassDetails = $generator->createClassNameDetails(
+            'BaseController',
+            'Controller\\Base\\',
+            'Controller'
+        );
+        
         $controllerClassDetails = $generator->createClassNameDetails(
             $entityClassDetails->getRelativeNameWithoutSuffix().'Controller',
             'Controller\\',
@@ -175,10 +181,27 @@ class MakeKmjCrud extends AbstractMaker{
             $entityClassDetails
         );
         // ------------ generate controller and template 
+        $baseControllerPath = 'src/Controller/Base/'.$baseControllerClassDetails->getShortName().'.php';
+        
+        if (!$this->fileManager->fileExists($baseControllerPath))
+        {
+            $generator->generateController(
+                $baseControllerClassDetails->getFullName(),
+                __DIR__ .'\../Resources/skeleton/kmj-crud/controller/BaseController.tpl.php',
+                [
+                    'namespace' => str_replace('\\'.$baseControllerClassDetails->getShortName(), '', $baseControllerClassDetails->getFullName()),
+                    'class_name' => $baseControllerClassDetails->getShortName()
+                ]
+            );
+            
+        }
+        
         $generator->generateController(
             $controllerClassDetails->getFullName(),
             __DIR__ .'\../Resources/skeleton/kmj-crud/controller/Controller.tpl.php',
             array_merge([
+                    'base_controller_full_name' => $baseControllerClassDetails->getFullName(),
+                    'base_controller' => $baseControllerClassDetails->getShortName(),
                     'entity_full_class_name' => $entityClassDetails->getFullName(),
                     'entity_class_name' => $entityClassDetails->getShortName(),
                     'form_full_class_name' => $formClassDetails->getFullName(),

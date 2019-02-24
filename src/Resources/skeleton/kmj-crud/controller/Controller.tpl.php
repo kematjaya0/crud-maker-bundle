@@ -5,7 +5,7 @@ namespace <?= $namespace ?>;
 use <?= $entity_full_class_name ?>;
 use <?= $form_full_class_name ?>;
 use <?= $form_filter_full_class_name ?>;
-use Kematjaya\CrudMakerBundle\Controller\Base\BaseController;
+use <?= $base_controller_full_name ?>;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Form\Form;
@@ -13,7 +13,7 @@ use Symfony\Component\Form\Form;
 /**
  * @Route("<?= $route_path ?>")
  */
- class <?= $class_name ?> extends BaseController <?= "\n" ?>
+ class <?= $class_name ?> extends <?= $base_controller ?> <?= "\n" ?>
 {
     /**
      * @Route("/", name="<?= $route_name ?>_index", methods={"GET", "POST"})
