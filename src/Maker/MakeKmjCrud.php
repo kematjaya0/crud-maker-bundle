@@ -140,11 +140,31 @@ class MakeKmjCrud extends AbstractMaker{
             'Controller'
         );
         
+        $controllerDir = $io->ask('controller directory (ex : backend, frontend)', null, function ($input){
+            if(is_null($input)) {
+                return null;
+            }
+            
+            if(!ctype_alpha($input)){
+                throw new \RuntimeException("directory only containt words.");
+            }
+            
+            return strtolower($input);
+        });
+        
+        $controllerNamespace    = 'Controller\\';
+        $templateNamespace      = null;
+        if(!is_null($controllerDir)){
+            $controllerNamespace = 'Controller\\'. ucwords($controllerDir).'\\';
+            $templateNamespace = $controllerDir.'/';
+        }
+        
         $controllerClassDetails = $generator->createClassNameDetails(
             $entityClassDetails->getRelativeNameWithoutSuffix().'Controller',
-            'Controller\\',
+            $controllerNamespace,
             'Controller'
         );
+        
         
         $iter = 0;
         do {
@@ -163,7 +183,7 @@ class MakeKmjCrud extends AbstractMaker{
         $entityTwigVarSingular = Str::asTwigVariable($entityVarSingular);
 
         $routeName = Str::asRouteName($controllerClassDetails->getRelativeNameWithoutSuffix());
-        $templatesPath = Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix());
+        $templatesPath = $templateNamespace.Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix());
         
         $this->formTypeRenderer->render(
             $formClassDetails,
@@ -230,6 +250,7 @@ class MakeKmjCrud extends AbstractMaker{
                 'entity_twig_var_singular' => $entityTwigVarSingular,
                 'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
                 'route_name' => $routeName,
+                'template_namespace' => $templateNamespace
             ],
             'index' => [
                 'entity_class_name' => $entityClassDetails->getShortName(),
@@ -238,6 +259,7 @@ class MakeKmjCrud extends AbstractMaker{
                 'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
                 'entity_fields' => $entityDoctrineDetails->getDisplayFields(),
                 'route_name' => $routeName,
+                'template_namespace' => $templateNamespace
             ],
             '_list_actions' => [
                 'route_name' => $routeName,
@@ -249,10 +271,12 @@ class MakeKmjCrud extends AbstractMaker{
             ],
             '_list_footer' => [
                 'route_name' => $routeName,
+                'template_namespace' => $templateNamespace
             ],
             'create' => [
                 'entity_class_name' => $entityClassDetails->getShortName(),
                 'route_name' => $routeName,
+                'template_namespace' => $templateNamespace
             ],
             'show' => [
                 'entity_class_name' => $entityClassDetails->getShortName(),
@@ -260,13 +284,14 @@ class MakeKmjCrud extends AbstractMaker{
                 'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
                 'entity_fields' => $entityDoctrineDetails->getDisplayFields(),
                 'route_name' => $routeName,
+                'template_namespace' => $templateNamespace
             ],
         ];
 
         $baseTemplates = [
-            'templates/base.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/base.tpl.php', 
-            'templates/_flashes.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/_flashes.tpl.php', 
-            'templates/_max_per_page.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/_max_per_page.tpl.php'
+            $templateNamespace.'templates/base.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/base.tpl.php', 
+            $templateNamespace.'templates/_flashes.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/_flashes.tpl.php', 
+            $templateNamespace.'templates/_max_per_page.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/_max_per_page.tpl.php'
         ];
         
         foreach($baseTemplates as $targetPath => $tpl) {

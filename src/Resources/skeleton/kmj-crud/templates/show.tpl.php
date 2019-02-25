@@ -1,4 +1,4 @@
-{% extends 'base.html.twig' %}
+{% extends '<?= $template_namespace ?>base.html.twig' %}
 
 {% block title %}{{title}}{% endblock %}
 

@@ -1,4 +1,4 @@
-{% extends 'base.html.twig' %}
+{% extends '<?= $template_namespace ?>base.html.twig' %}
 
 {% block title %}{{title}}{% endblock %}
 
@@ -16,7 +16,7 @@
                     </div>
                     <div class="panel-body">
                         <div class="table-responsive invoice-table">
-                            {% include '_flashes.html.twig' %}
+                            {% include '<?= $template_namespace ?>_flashes.html.twig' %}
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
@@ -27,14 +27,14 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {{include('<?= $route_name ?>/_filters.html.twig')}}
+                                    {{include('<?= $template_namespace ?><?= $route_name ?>/_filters.html.twig')}}
                                     {% for <?= $entity_twig_var_singular ?> in pagers.currentPageResults %}
                                     <tr>
                                         <?php foreach ($entity_fields as $field): ?>
                                         <td>{{ <?= $helper->getEntityFieldPrintCode($entity_twig_var_singular, $field) ?> }}</td>
                                         <?php endforeach; ?>
                                         <td>
-                                            {% include("<?= $route_name ?>/_list_actions.html.twig") %}
+                                            {% include("<?= $template_namespace ?><?= $route_name ?>/_list_actions.html.twig") %}
                                         </td>
                                     </tr>
                                     {% else %}
@@ -45,7 +45,7 @@
                                 </tbody>
                             </table>
                             
-                            {{ include('<?= $route_name ?>/_list_footer.html.twig') }}
+                            {{ include('<?= $template_namespace ?><?= $route_name ?>/_list_footer.html.twig') }}
                         </div>
                     </div>
                 </div>

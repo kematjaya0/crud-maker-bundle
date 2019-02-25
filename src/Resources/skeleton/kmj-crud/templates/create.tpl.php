@@ -1,4 +1,4 @@
-{% extends 'base.html.twig' %}
+{% extends '<?= $template_namespace ?>base.html.twig' %}
 
 {% block title %}{{title}}{% endblock %}
 
@@ -19,9 +19,9 @@
                     <div class="panel-body">
                         <div class="table-responsive invoice-table">
                             
-                            {{ include('_flashes.html.twig') }}
+                            {{ include('<?= $template_namespace ?>_flashes.html.twig') }}
                             
-                            {{ include('<?= $route_name ?>/_form.html.twig') }}
+                            {{ include('<?= $template_namespace ?><?= $route_name ?>/_form.html.twig') }}
                             
                         </div>
                     </div>
