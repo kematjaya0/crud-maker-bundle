@@ -75,6 +75,7 @@ class MakeFilter extends AbstractMaker{
         $formFields = ['field_name' => null];
         $boundClass = $input->getArgument('bound-class');
         $boundClassDetails = null;
+        $identifierField = null;
         if (null !== $boundClass) {
             $boundClassDetails = $generator->createClassNameDetails(
                 $boundClass,
@@ -82,7 +83,9 @@ class MakeFilter extends AbstractMaker{
             );
             $doctrineEntityDetails = $this->entityHelper->createDoctrineDetails($boundClassDetails->getFullName());
             if (null !== $doctrineEntityDetails) {
-                $formFields = $doctrineEntityDetails->getFormFields();
+                //$formFields = $doctrineEntityDetails->getFormFields();
+                $formFields = $doctrineEntityDetails->getDisplayFields();
+                $identifierField = $doctrineEntityDetails->getIdentifier();
             } else {
                 $classDetails = new ClassDetails($boundClassDetails->getFullName());
                 $formFields = $classDetails->getFormFields();
@@ -92,7 +95,8 @@ class MakeFilter extends AbstractMaker{
         $this->formTypeRenderer->render(
             $formClassNameDetails,
             $formFields,
-            $boundClassDetails
+            $boundClassDetails,
+            $identifierField
         );
         $generator->writeChanges();
         $this->writeSuccessMessage($io);

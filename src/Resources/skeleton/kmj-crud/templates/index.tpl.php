@@ -20,9 +20,13 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                        <?php foreach ($entity_fields as $field): ?>
+                                    <?php foreach ($entity_fields as $field): ?>
+                                        <?php if(strtolower($field['fieldName']) === strtolower($entity_identifier)):?>
+                                        <th></th>
+                                        <?php else:?>
                                         <th>{{ '<?= strtolower($field['fieldName']) ?>'|trans}} </th>
-                        <?php endforeach; ?>
+                                        <?php endif;?>
+                                    <?php endforeach; ?>
                                         <th>actions</th>
                                     </tr>
                                 </thead>
@@ -31,7 +35,11 @@
                                     {% for <?= $entity_twig_var_singular ?> in pagers.currentPageResults %}
                                     <tr>
                                         <?php foreach ($entity_fields as $field): ?>
+                                        <?php if(strtolower($field['fieldName']) === strtolower($entity_identifier)):?>
+                                        <th><input type="checkbox" class="select_<?= $route_name ?>" name="select[{{ <?= $entity_twig_var_singular ?>.id }}]" value="{{ <?= $entity_twig_var_singular ?>.id }}" onclick="selectObj(this)" {{(<?= $entity_twig_var_singular ?>.id in selected_data)?'checked':'' }}/></th>
+                                        <?php else:?>
                                         <td>{{ <?= $helper->getEntityFieldPrintCode($entity_twig_var_singular, $field) ?> }}</td>
+                                        <?php endif;?>
                                         <?php endforeach; ?>
                                         <td>
                                             {% include("<?= $template_namespace ?><?= $route_name ?>/_list_actions.html.twig") %}

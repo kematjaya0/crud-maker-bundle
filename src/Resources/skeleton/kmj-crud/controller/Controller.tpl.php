@@ -38,7 +38,8 @@ use Symfony\Component\Form\Form;
         return $this->render('<?= $templates_path ?>/index.html.twig', array(
             'title' => $this->getTranslator()->trans('<?= $route_name ?>'),
             'pagers' => $paginator,
-            'filter' => $form->createView()
+            'filter' => $form->createView(),
+            'selected_data' => $this->get('session')->get(<?= $entity_class_name ?>::class, [])
         ));
         
     }
@@ -134,6 +135,78 @@ use Symfony\Component\Form\Form;
         ]);
     }
     
+    
+    /**
+     * @Route("/add_selected", name="<?= $route_name ?>_add_selected", methods={"GET"})
+     */
+    public function add_selected(Request $request)
+    {
+        $<?= $entity_var_singular ?> = $this->getById($request->get('id'));
+        if(!$<?= $entity_var_singular ?>) {
+            return $this->json(['status' => false, 'messages' => $this->getTranslator()->trans('object.not_found')]);
+        }
+        
+        $selected = $this->get('session')->get(<?= $entity_class_name ?>::class, []);
+        switch($request->get('action')) {
+            case 'add':
+                if(!in_array($<?= $entity_var_singular ?>->getId(), $selected)) {
+                    array_push($selected, $<?= $entity_var_singular ?>->getId());
+                }
+                break;
+            case 'remove':
+                $keys = array_search($<?= $entity_var_singular ?>->getId(), $selected);
+                unset($selected[$keys]);
+                break;
+            default:
+                break;
+        }
+        
+        $this->get('session')->set(<?= $entity_class_name ?>::class, $selected);
+        return $this->json(['status' => true, 'count' => count($selected)]);
+    }
+    
+    /**
+     * @Route("/action_selected", name="<?= $route_name ?>_action_selected", methods={"POST"})
+     */
+    public function action_selected(Request $request)
+    {
+        if ($this->isCsrfTokenValid('<?= $route_name ?>_action_selected', $request->request->get('_token'))) {
+            $selected = $this->get('session')->get(<?= $entity_class_name ?>::class, []);
+            $em = $this->getDoctrine()->getManager();
+            $con = $em->getConnection();
+            switch($request->get('_action')) {
+                case 'delete':
+                    try{
+                        $con->beginTransaction();
+                        foreach($selected as $v){
+                            $<?= $entity_var_singular ?> = $this->getById($v);
+                            if($<?= $entity_var_singular ?>) {
+                                $em->remove($<?= $entity_var_singular ?>);
+                                $em->flush();
+                            }
+                        }
+                        
+                        $con->commit();
+                        $this->get('session')->set(<?= $entity_class_name ?>::class, []);
+                        $this->addFlash('success', $this->getTranslator()->trans('messages.deleted.success'));
+                        return $this->redirectToRoute('<?= $route_name ?>_index');
+                    } catch (Exception $ex) {
+                        $this->addFlash('error', $this->getTranslator()->trans('messages.deleted.error') . ' : ' . $ex->getMessages());
+                        $con->rollBack();
+                    }
+                        
+                    break;
+                default:
+                    $this->addFlash('error', $this->getTranslator()->trans('messages.null_selected'));
+                    break;
+            }
+        }else{
+            $this->addFlash('error', $this->getTranslator()->trans('messages.deleted.error'));
+        }
+
+        return $this->redirectToRoute('<?= $route_name ?>_index');
+        
+    }
     
     /**
      * @Route("/delete/{<?= $entity_identifier ?>}", name="<?= $route_name ?>_delete", methods={"POST","DELETE"})

@@ -195,10 +195,12 @@ class MakeKmjCrud extends AbstractMaker{
             $input->getArgument('entity-class').'FilterType', 'Filter\\', 'FilterType'
         );
         
+        
         $this->formFilterTypeRenderer->render(
             $filterClassNameDetails,
             $entityDoctrineDetails->getFormFields(),
-            $entityClassDetails
+            $entityClassDetails,
+            $entityDoctrineDetails->getIdentifier()
         );
         // ------------ generate controller and template 
         $baseControllerPath = 'src/Controller/Base/'.$baseControllerClassDetails->getShortName().'.php';
@@ -261,6 +263,9 @@ class MakeKmjCrud extends AbstractMaker{
                 'route_name' => $routeName,
                 'template_namespace' => $templateNamespace
             ],
+            '_selected_data' => [
+                'route_name' => $routeName
+            ],
             '_list_actions' => [
                 'route_name' => $routeName,
                 'entity_twig_var_singular' => $entityTwigVarSingular,
@@ -287,11 +292,11 @@ class MakeKmjCrud extends AbstractMaker{
                 'template_namespace' => $templateNamespace
             ],
         ];
-
+        //dump($templates);exit;
         $baseTemplates = [
-            $templateNamespace.'templates/base.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/base.tpl.php', 
-            $templateNamespace.'templates/_flashes.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/_flashes.tpl.php', 
-            $templateNamespace.'templates/_max_per_page.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/_max_per_page.tpl.php'
+            'templates/'.$templateNamespace.'base.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/base.tpl.php', 
+            'templates/'.$templateNamespace.'_flashes.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/_flashes.tpl.php', 
+            'templates/'.$templateNamespace.'_max_per_page.html.twig' => __DIR__ .'\../Resources/skeleton/kmj-crud/_max_per_page.tpl.php'
         ];
         
         foreach($baseTemplates as $targetPath => $tpl) {

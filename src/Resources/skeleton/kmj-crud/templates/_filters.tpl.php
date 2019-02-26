@@ -1,6 +1,6 @@
 {{form_start(filter)}}
 <tr>
-    <td></td>
+    <td><input type="checkbox" name="select_all" onclick="selectAll(this)"/></td>
     <?php foreach ($filter_fields as $k => $field): ?>
     <td>{{ form_widget(filter.<?= $k ?>) }}</td>
     <?php endforeach; ?>
