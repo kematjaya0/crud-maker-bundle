@@ -152,6 +152,9 @@ class MakeKmjCrud extends AbstractMaker{
             return strtolower($input);
         });
         
+        $useCredential = $io->ask('use credential button (required kematjaya/user-management)', true);
+        
+        
         $controllerNamespace    = 'Controller\\';
         $templateNamespace      = null;
         if(!is_null($controllerDir)){
@@ -195,10 +198,19 @@ class MakeKmjCrud extends AbstractMaker{
             $input->getArgument('entity-class').'FilterType', 'Filter\\', 'FilterType'
         );
         
+        $formFields = [];
+        $displayFields = $entityDoctrineDetails->getDisplayFields();
+        foreach($entityDoctrineDetails->getFormFields() as $k => $value){
+            if(is_null($value) && isset($displayFields[$k])) {
+                $formFields[$k] = $displayFields[$k];
+            } else{
+                $formFields[$k] = $value;
+            }
+        }
         
         $this->formFilterTypeRenderer->render(
             $filterClassNameDetails,
-            $entityDoctrineDetails->getFormFields(),
+            $formFields,
             $entityClassDetails,
             $entityDoctrineDetails->getIdentifier()
         );
@@ -261,18 +273,22 @@ class MakeKmjCrud extends AbstractMaker{
                 'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
                 'entity_fields' => $entityDoctrineDetails->getDisplayFields(),
                 'route_name' => $routeName,
-                'template_namespace' => $templateNamespace
+                'template_namespace' => $templateNamespace,
+                'use_credential' => $useCredential
             ],
             '_selected_data' => [
-                'route_name' => $routeName
+                'route_name' => $routeName,
+                'use_credential' => $useCredential
             ],
             '_list_actions' => [
                 'route_name' => $routeName,
                 'entity_twig_var_singular' => $entityTwigVarSingular,
+                'use_credential' => $useCredential
             ],
             '_filters' => [
                 'filter_fields' => $entityDoctrineDetails->getFormFields(),
                 'route_name' => $routeName,
+                'use_credential' => $useCredential
             ],
             '_list_footer' => [
                 'route_name' => $routeName,
@@ -289,7 +305,8 @@ class MakeKmjCrud extends AbstractMaker{
                 'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
                 'entity_fields' => $entityDoctrineDetails->getDisplayFields(),
                 'route_name' => $routeName,
-                'template_namespace' => $templateNamespace
+                'template_namespace' => $templateNamespace,
+                'use_credential' => $useCredential
             ],
         ];
         //dump($templates);exit;

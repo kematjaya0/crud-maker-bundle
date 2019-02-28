@@ -83,14 +83,24 @@ class MakeFilter extends AbstractMaker{
             );
             $doctrineEntityDetails = $this->entityHelper->createDoctrineDetails($boundClassDetails->getFullName());
             if (null !== $doctrineEntityDetails) {
-                //$formFields = $doctrineEntityDetails->getFormFields();
-                $formFields = $doctrineEntityDetails->getDisplayFields();
+                $formFields = [];
+                $displayFields = $doctrineEntityDetails->getDisplayFields();
+                foreach($doctrineEntityDetails->getFormFields() as $k => $value){
+                    if(is_null($value) && isset($displayFields[$k])) {
+                        $formFields[$k] = $displayFields[$k];
+                    } else{
+                        $formFields[$k] = $value;
+                    }
+                }
+        
                 $identifierField = $doctrineEntityDetails->getIdentifier();
             } else {
                 $classDetails = new ClassDetails($boundClassDetails->getFullName());
                 $formFields = $classDetails->getFormFields();
             }
         }
+        
+        
         
         $this->formTypeRenderer->render(
             $formClassNameDetails,

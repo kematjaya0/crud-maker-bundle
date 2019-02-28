@@ -32,7 +32,7 @@ final class FormFilterTypeRenderer
         $fieldTypeUseStatements = [];
         $fields = [];
         foreach ($formFields as $name => $fieldTypeOptions) {
-            $fieldTypeOptions = $fieldTypeOptions ?? ['type' => null, 'options_code' => null];
+            $fieldTypeOptions = ($fieldTypeOptions) ? ['type' => null, 'options_code' => null] : null;
 
             if (isset($fieldTypeOptions['type'])) {
                 switch($fieldTypeOptions['type']) {

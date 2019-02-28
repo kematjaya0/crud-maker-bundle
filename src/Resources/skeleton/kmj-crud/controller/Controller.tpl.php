@@ -132,6 +132,7 @@ use Symfony\Component\Form\Form;
         
         return $this->render('<?= $templates_path ?>/show.html.twig', [
             '<?= $entity_twig_var_singular ?>' => $<?= $entity_var_singular ?>,
+            'title' => 'show'
         ]);
     }
     

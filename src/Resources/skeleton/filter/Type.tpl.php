@@ -25,9 +25,9 @@ class <?= $class_name ?> extends AbstractType
         <?php continue;?>
     <?php endif;?>
     <?php if (null === $typeOptions['type'] && !$typeOptions['options_code']): ?>
-            ->add('<?= $form_field ?>', Filters\TextFilterType::class, ['condition_pattern' => FilterOperands::STRING_BOTH, 'attr' => ['class' => 'form-control']])
+            ->add('<?= $form_field ?>', Filters\TextFilterType::class, ['condition_pattern' => FilterOperands::STRING_BOTH, 'attr' => ['class' => 'form-control', 'placeholder' => 'search <?= $form_field ?>']])
     <?php elseif (null !== $typeOptions['type'] && !isset($typeOptions['options_code'])): ?>
-            ->add('<?= $form_field ?>', Filters\<?= $typeOptions['type'] ?>::class)
+            ->add('<?= $form_field ?>', Filters\<?= $typeOptions['type'] ?>::class, ['attr' => ['class' => 'form-control', 'placeholder' => 'search <?= $form_field ?>']])
     <?php else: ?>
             ->add('<?= $form_field ?>', <?= $typeOptions['type'] ? ('Filters\\'.$typeOptions['type'].'::class') : 'null' ?>, [
     <?= $typeOptions['options_code']."\n" ?>

@@ -1,6 +1,14 @@
 {{form_start(filter)}}
 <tr>
-    <td><input type="checkbox" name="select_all" onclick="selectAll(this)"/></td>
+    <td>
+        <?php if($use_credential):?>
+        {% if is_allow_to_access('<?= $route_name ?>_add_selected') %}
+        <?php endif;?>
+        <input type="checkbox" name="select_all" onclick="selectAll(this)"/>
+        <?php if($use_credential):?>
+        {% endif %}
+        <?php endif;?>
+    </td>
     <?php foreach ($filter_fields as $k => $field): ?>
     <td>{{ form_widget(filter.<?= $k ?>) }}</td>
     <?php endforeach; ?>

@@ -11,7 +11,11 @@
             <div class="col-lg-12 col-md-12">
                 <div class="panel panel-white">
                     <div class="panel-heading clearfix">
+                        <?php if($use_credential):?>
+                        {{ link_to('<?= $route_name ?>_create', {}, {title: 'create'|trans, class: 'btn btn-default btn-sm pull-right', icon: 'fa fa-plus'}) }}
+                        <?php else:?>
                         <a href="{{path('<?= $route_name ?>_create')}}" class="btn btn-default btn-sm pull-right"><span class="fa fa-plus"></span> {{'create'|trans}}</a>
+                        <?php endif;?>
                         <h4 class="panel-title">{{ 'list'|trans }} {{title}}</h4>
                     </div>
                     <div class="panel-body">
@@ -36,7 +40,15 @@
                                     <tr>
                                         <?php foreach ($entity_fields as $field): ?>
                                         <?php if(strtolower($field['fieldName']) === strtolower($entity_identifier)):?>
-                                        <th><input type="checkbox" class="select_<?= $route_name ?>" name="select[{{ <?= $entity_twig_var_singular ?>.id }}]" value="{{ <?= $entity_twig_var_singular ?>.id }}" onclick="selectObj(this)" {{(<?= $entity_twig_var_singular ?>.id in selected_data)?'checked':'' }}/></th>
+                                            <?php if($use_credential):?>
+                                            <td>
+                                            {% if is_allow_to_access('<?= $route_name ?>_add_selected') %}
+                                            <?php endif;?>
+                                            <input type="checkbox" class="select_<?= $route_name ?>" name="select[{{ <?= $entity_twig_var_singular ?>.id }}]" value="{{ <?= $entity_twig_var_singular ?>.id }}" onclick="selectObj(this)" {{(<?= $entity_twig_var_singular ?>.id in selected_data)?'checked':'' }}/>
+                                            <?php if($use_credential):?>
+                                            {% endif %}
+                                            </td>
+                                            <?php endif;?>
                                         <?php else:?>
                                         <td>{{ <?= $helper->getEntityFieldPrintCode($entity_twig_var_singular, $field) ?> }}</td>
                                         <?php endif;?>
