@@ -25,7 +25,8 @@
         "pagerfanta/pagerfanta": "^2.0",
         "doctrine/orm": "^2.5.11",
         "lexik/form-filter-bundle": "^5.0@dev",
-        "symfony/var-dumper": "^4.0"
+        "symfony/var-dumper": "^4.0",
+        "white-october/pagerfanta-bundle": "^1.2"
     },
     "autoload": {
         "psr-4": {
