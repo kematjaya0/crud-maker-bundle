@@ -7,7 +7,9 @@
 namespace Kematjaya\CrudMakerBundle\Tests;
 
 use Kematjaya\CrudMakerBundle\Maker\MakeFilter;
+use Kematjaya\CrudMakerBundle\Maker\MakeKmjCrud;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -44,7 +46,7 @@ class CrudMakerBundleTest extends WebTestCase
      */
     public function testInstanceMakerFilter(ContainerInterface $container):MakeFilter
     {
-        $bag = new \Symfony\Component\DependencyInjection\ParameterBag\ParameterBag([
+        $bag = new ParameterBag([
             'crud_maker' => $container->getParameter('crud_maker')
         ]);
         
@@ -82,6 +84,56 @@ class CrudMakerBundleTest extends WebTestCase
         if ($fileSystem->exists($file)) {
             $fileSystem->remove($file);
         }
+        $maker->generate($input, $io, $container->get('generator'));
+        $this->assertTrue($fileSystem->exists($file));
+    }
+    
+    /**
+     * @depends testInstanceClass
+     * @param ContainerInterface $container
+     * @return MakeFilter
+     */
+    public function testInstanceMakerCRUD(ContainerInterface $container):MakeKmjCrud
+    {
+//        $bag = new ParameterBag([
+//            'crud_maker' => $container->getParameter('crud_maker')
+//        ]);
+        
+        $registry = $this->createConfiguredMock(ManagerRegistry::class, [
+            'getManagers' => []
+        ]);
+        $entityHelper = new DoctrineHelper('Entity', $registry);
+        
+        $maker = new MakeKmjCrud($entityHelper, $container->get('filter_type_renderer'));
+        
+        $this->assertTrue(true);
+        
+        return $maker;
+    }
+    
+    /**
+     * @depends testInstanceClass
+     * @depends testInstanceMakerCRUD
+     * @param MakeKmjCrud $maker
+     */
+    public function testGenerateCRUD(ContainerInterface $container, MakeKmjCrud $maker)
+    {
+        $input = $this->createConfiguredMock(InputInterface::class, [
+            'getArgument' => 'TestEntity'
+        ]);
+        $formatter = $this->createConfiguredMock(OutputFormatterInterface::class, []);
+        $output = $this->createConfiguredMock(OutputInterface::class, [
+            'getFormatter' => $formatter
+        ]);
+        $io = new ConsoleStyle($input, $output);
+        
+//        $fileSystem = new \Symfony\Component\Filesystem\Filesystem();
+//        $basePath = dirname(__DIR__);
+//        $arr = ['tests', 'Filter', 'TestEntityFilterType.php'];
+//        $file = $basePath . $basePath . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $arr);
+//        if ($fileSystem->exists($file)) {
+//            $fileSystem->remove($file);
+//        }
         $maker->generate($input, $io, $container->get('generator'));
         $this->assertTrue($fileSystem->exists($file));
     }

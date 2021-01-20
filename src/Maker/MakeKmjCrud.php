@@ -27,25 +27,30 @@ use Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer;
 use Symfony\Bundle\MakerBundle\Validator;
 use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
-use Symfony\Bundle\MakerBundle\FileManager;
 use Symfony\Bundle\TwigBundle\TwigBundle;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\Common\Inflector\Inflector;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 
-class MakeKmjCrud extends AbstractMaker{
+class MakeKmjCrud extends AbstractMaker
+{
     
+    /**
+     * 
+     * @var DoctrineHelper
+     */
     private $doctrineHelper;
-    private $formTypeRenderer;
-    private $formFilterTypeRenderer;
-    private $fileManager;
     
-    public function __construct(DoctrineHelper $doctrineHelper, FormFilterTypeRenderer $formFilterTypeRenderer, FormTypeRenderer $formTypeRenderer, FileManager $fileManager)
+    /**
+     * 
+     * @var FormFilterTypeRenderer
+     */
+    private $formFilterTypeRenderer;
+    
+    public function __construct(DoctrineHelper $doctrineHelper, FormFilterTypeRenderer $formFilterTypeRenderer)
     {
         $this->doctrineHelper = $doctrineHelper;
-        $this->formTypeRenderer = $formTypeRenderer;
         $this->formFilterTypeRenderer = $formFilterTypeRenderer;
-        $this->fileManager = $fileManager;
     }
     
     public function configureCommand(Command $command, InputConfiguration $inputConfig) {
