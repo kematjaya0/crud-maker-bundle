@@ -11,3 +11,5 @@ services:
         tags: ['maker.command']
         
     Kematjaya\CrudMakerBundle\Renderer\FormFilterTypeRenderer: ~
+    Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper:
+        arguments: ['Entity']

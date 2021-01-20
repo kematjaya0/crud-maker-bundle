@@ -2,10 +2,7 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
-        
-    Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper:
-        arguments: ['Entity']
-        
+    
     Symfony\Bundle\MakerBundle\Util\AutoloaderUtil: ~
     Symfony\Bundle\MakerBundle\Util\ComposerAutoloaderFinder:
         arguments: ['Kematjaya']
