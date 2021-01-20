@@ -1,0 +1,34 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        
+    Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper:
+        arguments: ['Entity']
+        
+    Symfony\Bundle\MakerBundle\Util\AutoloaderUtil: ~
+    Symfony\Bundle\MakerBundle\Util\ComposerAutoloaderFinder:
+        arguments: ['Kematjaya']
+        
+    Symfony\Component\Filesystem\Filesystem: ~
+    Symfony\Bundle\MakerBundle\FileManager:
+        arguments: 
+            - '@Symfony\Component\Filesystem\Filesystem'
+            - '@Symfony\Bundle\MakerBundle\Util\AutoloaderUtil'
+            - '@Symfony\Bundle\MakerBundle\Util\MakerFileLinkFormatter'
+            - 'var'
+            
+    Symfony\Bundle\MakerBundle\Util\PhpCompatUtil: ~
+    Symfony\Bundle\MakerBundle\Util\MakerFileLinkFormatter: ~
+    Symfony\Bundle\MakerBundle\Generator:
+        arguments: ['@Symfony\Bundle\MakerBundle\FileManager', 'Kematjaya\CrudMakerBundle\Tests', '@Symfony\Bundle\MakerBundle\Util\PhpCompatUtil']
+        
+    generator:
+        alias: Symfony\Bundle\MakerBundle\Generator
+        public: true
+        
+    filter_type_renderer:
+        alias: Kematjaya\CrudMakerBundle\Renderer\FormFilterTypeRenderer
+        public: true
+        
+    

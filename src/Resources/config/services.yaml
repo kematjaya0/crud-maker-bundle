@@ -1,0 +1,13 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    Kematjaya\CrudMakerBundle\Maker\MakeFilter:
+        tags: ['maker.command']
+        
+    Kematjaya\CrudMakerBundle\Maker\MakeKmjCrud:
+        tags: ['maker.command']
+        
+    Kematjaya\CrudMakerBundle\Renderer\FormFilterTypeRenderer: ~

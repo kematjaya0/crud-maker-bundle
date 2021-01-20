@@ -21,15 +21,40 @@ use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
 use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Validator;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
+use Symfony\Bundle\MakerBundle\Util\ClassDetails;
+use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
 
-class MakeFilter extends AbstractMaker{
-    
+class MakeFilter extends AbstractMaker
+{
+    /**
+     * 
+     * @var DoctrineHelper
+     */
     private $entityHelper;
+    
+    /**
+     * 
+     * @var FormFilterTypeRenderer
+     */
     private $formTypeRenderer;
     
-    public function __construct(DoctrineHelper $entityHelper, FormFilterTypeRenderer $formTypeRenderer)
+    /**
+     * 
+     * @var string
+     */
+    private $identifierField;
+    
+    /**
+     * 
+     * @var array
+     */
+    private $configs = [];
+    
+    public function __construct(ParameterBagInterface $bag, DoctrineHelper $entityHelper, FormFilterTypeRenderer $formTypeRenderer)
     {
+        $this->configs = $bag->get('crud_maker');
         $this->entityHelper = $entityHelper;
         $this->formTypeRenderer = $formTypeRenderer;
     }
@@ -68,8 +93,9 @@ class MakeFilter extends AbstractMaker{
     }
     
     public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) {
+        
         $formClassNameDetails = $generator->createClassNameDetails(
-            $input->getArgument('name'), 'Filter\\', 'FilterType'
+            $input->getArgument('name'), $this->configs['filter']['namespace_prefix'], $this->configs['filter']['suffix']
         );
         
         $formFields = ['field_name' => null];
@@ -79,37 +105,44 @@ class MakeFilter extends AbstractMaker{
         if (null !== $boundClass) {
             $boundClassDetails = $generator->createClassNameDetails(
                 $boundClass,
-                'Entity\\'
+                $this->configs['entity']['namespace_prefix'],
+                $this->configs['entity']['suffix']
             );
-            $doctrineEntityDetails = $this->entityHelper->createDoctrineDetails($boundClassDetails->getFullName());
-            if (null !== $doctrineEntityDetails) {
-                $formFields = [];
-                $displayFields = $doctrineEntityDetails->getDisplayFields();
-                foreach($doctrineEntityDetails->getFormFields() as $k => $value){
-                    if(is_null($value) && isset($displayFields[$k])) {
-                        $formFields[$k] = $displayFields[$k];
-                    } else{
-                        $formFields[$k] = $value;
-                    }
-                }
-        
-                $identifierField = $doctrineEntityDetails->getIdentifier();
-            } else {
-                $classDetails = new ClassDetails($boundClassDetails->getFullName());
-                $formFields = $classDetails->getFormFields();
-            }
+            
+            $formFields = $this->getFormFields($boundClassDetails);
         }
-        
-        
         
         $this->formTypeRenderer->render(
             $formClassNameDetails,
             $formFields,
             $boundClassDetails,
-            $identifierField
+            $this->identifierField
         );
         $generator->writeChanges();
         $this->writeSuccessMessage($io);
     }
 
+    protected function getFormFields(ClassNameDetails $boundClassDetails):array
+    {
+        $doctrineEntityDetails = $this->entityHelper->createDoctrineDetails($boundClassDetails->getFullName());
+        if (null === $doctrineEntityDetails) {
+            $classDetails = new ClassDetails($boundClassDetails->getFullName());
+            
+            return $classDetails->getFormFields();
+        }  
+        
+        $formFields = [];
+        $displayFields = $doctrineEntityDetails->getDisplayFields();
+        foreach ($doctrineEntityDetails->getFormFields() as $k => $value) {
+            if (is_null($value) && isset($displayFields[$k])) {
+                $formFields[$k] = $displayFields[$k];
+            } else{
+                $formFields[$k] = $value;
+            }
+        }
+
+        $this->identifierField = $doctrineEntityDetails->getIdentifier();
+        
+        return $formFields;
+    }
 }

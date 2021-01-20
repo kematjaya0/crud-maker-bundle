@@ -8,25 +8,7 @@
         <defaults public="false" />
         
         <service public="true" id="kematjaya.form_filter_query_builder" alias="lexik_form_filter.query_builder_updater"></service>
-        <service public="true" id="maker.renderer.form_filter_type_renderer" class="Kematjaya\CrudMakerBundle\Renderer\FormFilterTypeRenderer">
-            <argument type="service" id="maker.generator" />
-        </service>
         
-        <service public="true" id="maker.command.make_kmj_filter" class="Kematjaya\CrudMakerBundle\Maker\MakeFilter">
-            <argument type="service" id="maker.doctrine_helper" />
-            <argument type="service" id="maker.renderer.form_filter_type_renderer" />
-            
-            <tag name="maker.command"/>
-        </service>
-        
-        <service public="true" id="maker.command.make_kmj_crud" class="Kematjaya\CrudMakerBundle\Maker\MakeKmjCrud">
-            <argument type="service" id="maker.doctrine_helper" />
-            <argument type="service" id="maker.renderer.form_filter_type_renderer" />
-            <argument type="service" id="maker.renderer.form_type_renderer" />
-            <argument type="service" id="maker.file_manager" />
-            
-            <tag name="maker.command"/>
-        </service>
         
     </services>
 </container>

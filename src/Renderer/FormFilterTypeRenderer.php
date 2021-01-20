@@ -32,38 +32,15 @@ final class FormFilterTypeRenderer
         $fieldTypeUseStatements = [];
         $fields = [];
         foreach ($formFields as $name => $fieldTypeOptions) {
-            $fieldTypeOptions = ($fieldTypeOptions) ? ['type' => null, 'options_code' => null] : null;
-
-            if (isset($fieldTypeOptions['type'])) {
-                switch($fieldTypeOptions['type']) {
-                    case "string":
-                        $fieldTypeOptions['type'] = 'Filters\TextFilterType';
-                        $fieldTypeOptions['options_code'] = "'condition_pattern' => FilterOperands::STRING_BOTH, 'attr' => ['class' => 'form-control', 'placeholder' => 'search ".$name."']";
-                        break;
-                    case 'boolean':
-                        $fieldTypeOptions['type'] = 'Filters\BooleanFilterType';
-                        $fieldTypeOptions['options_code'] = "'attr' => ['class' => 'form-control', 'placeholder' => 'search ".$name."']";
-                        break;
-                    case 'array':
-                        $fieldTypeOptions['type'] = 'Filters\ChoiceFilterType';
-                        $fieldTypeOptions['options_code'] = "'choices' => [], 'attr' => ['class' => 'form-control', 'placeholder' => 'search ".$name."']";
-                        break;
-                    default:
-                        $fieldTypeOptions['type'] = 'Filters\TextFilterType';
-                        $fieldTypeOptions['options_code'] = "'condition_pattern' => FilterOperands::STRING_BOTH, 'attr' => ['class' => 'form-control', 'placeholder' => 'search ".$name."']";
-                        break;
-                }
-                $fieldTypeUseStatements[] = $fieldTypeOptions['type'];
-                $fieldTypeOptions['type'] = Str::getShortClassName($fieldTypeOptions['type']);
-                
-            }
-
-            $fields[$name] = $fieldTypeOptions;
+            $fieldTypeOptions = ($fieldTypeOptions) ? ['type' => null, 'options_code' => null] : ['type' => 'string'];
+            
+            $fields[$name] = $this->getFieldTypeOptions($fieldTypeOptions);
+            $fieldTypeUseStatements[] = $fieldTypeOptions['type'];
         }
         
         $this->generator->generateClass(
             $formClassDetails->getFullName(),
-            __DIR__ .'\../Resources/skeleton/filter/Type.tpl.php',
+            dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Resources/skeleton/filter/Type.tpl.php',
             [
                 'bounded_full_class_name' => $boundClassDetails ? $boundClassDetails->getFullName() : null,
                 'bounded_class_name' => $boundClassDetails ? $boundClassDetails->getShortName() : null,
@@ -73,5 +50,31 @@ final class FormFilterTypeRenderer
                 'identifier' => $identifierField
             ]
         );
+    }
+    
+    protected function getFieldTypeOptions(array $fieldTypeOptions)
+    {
+        if (!isset($fieldTypeOptions['type'])) {
+            return $fieldTypeOptions;
+        }
+        
+        switch ($fieldTypeOptions['type']) {
+            case 'boolean':
+                $fieldTypeOptions['type'] = 'Filters\BooleanFilterType';
+                $fieldTypeOptions['options_code'] = "";
+                break;
+            case 'array':
+                $fieldTypeOptions['type'] = 'Filters\ChoiceFilterType';
+                $fieldTypeOptions['options_code'] = "'choices' => []";
+                break;
+            default:
+                $fieldTypeOptions['type'] = 'Filters\TextFilterType';
+                $fieldTypeOptions['options_code'] = "'condition_pattern' => FilterOperands::STRING_BOTH";
+                break;
+        }
+        
+        $fieldTypeOptions['type'] = Str::getShortClassName($fieldTypeOptions['type']);
+        
+        return $fieldTypeOptions;
     }
 }
