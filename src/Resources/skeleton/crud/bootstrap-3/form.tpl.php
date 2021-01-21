@@ -1,4 +1,4 @@
-<?php if (isset($filter_class_name)): ?>
+<?php if ($is_modal): ?>
 {% extends '@BaseController/modal-layout.html.twig' %}
 
 {% block title %}{{ title|trans}} {{ '<?= strtolower($entity_class_name) ?>'|trans }}{% endblock %}
