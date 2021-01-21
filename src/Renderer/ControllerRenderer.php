@@ -116,6 +116,7 @@ class ControllerRenderer
                 'entity_twig_var_singular' => $entityTwigVarSingular,
                 'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
             ],
+            '_max_per_page' => [],
             '_filters' => [
                 'route_name' => $routeName,
                 'fields_skip' => [$entityDoctrineDetails->getIdentifier()],

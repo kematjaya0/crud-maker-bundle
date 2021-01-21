@@ -46,5 +46,17 @@
             </tbody>
         </table>
     </div>
-    
+    <div class="col-lg-2">
+        {{ include('<?= $templates_path ?>/_max_per_page.html.twig', {url: '<?= $route_name ?>_index'}) }}
+    </div>
+    <div class="pull-right">
+        <style>
+            .pagination {
+                margin : 0px;
+            }
+        </style>
+        <div class="pagerfanta pull-right">
+            {{ knp_pagination_render(<?= $entity_twig_var_plural ?>) }}
+        </div>
+    </div>
 {% endblock %}

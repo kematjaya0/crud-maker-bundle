@@ -41,10 +41,12 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         <?php if (isset($filter_class_name)): ?>
         $form = $this->createFormFilter(<?= $filter_class_name ?>::class);
         $queryBuilder = $this->buildFilter($request, $form, $<?= $repository_var ?>->createQueryBuilder('this'));
+        <?php else:?>
+        $queryBuilder = $<?= $repository_var ?>->createQueryBuilder('this');
         <?php endif ?>
         
         return $this->render('<?= $templates_path ?>/index.html.twig', [
-            '<?= $entity_twig_var_plural ?>' => <?php echo (isset($filter_class_name)) ? '$queryBuilder->getQuery()->getResult()':  sprintf("$%s->findAll()", $repository_var) ?>, <?= "\n" ?>
+            '<?= $entity_twig_var_plural ?>' => parent::createPaginator($queryBuilder, $request), <?= "\n" ?>
             <?php if (isset($filter_class_name)): ?>
             '<?= $filter_name ?>' => $form->createView() 
             <?php endif ?>
@@ -57,11 +59,13 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
             ->getRepository(<?= $entity_class_name ?>::class);
         <?php if (isset($filter_class_name)): ?>
         $form = $this->createFormFilter(<?= $filter_class_name ?>::class);
-        $queryBuilder = $this->buildFilter($request, $form, $<?= $repository_var ?>->createQueryBuilder('this'));
+        $queryBuilder = $this->buildFilter($request, $form, $repo->createQueryBuilder('this'));
+        <?php else:?>
+        $queryBuilder = $repo->createQueryBuilder('this');
         <?php endif ?>
         
         return $this->render('<?= $templates_path ?>/index.html.twig', [
-            '<?= $entity_twig_var_plural ?>' => <?php echo (isset($filter_class_name)) ? '$queryBuilder->getQuery()->getResult()': '$repo->findAll()' ?>, <?= "\n" ?>
+            '<?= $entity_twig_var_plural ?>' => parent::createPaginator($queryBuilder, $request), <?= "\n" ?>
             <?php if (isset($filter_class_name)): ?>
             '<?= $filter_name ?>' => $form->createView() 
             <?php endif ?>
@@ -92,10 +96,10 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     }
 
 <?php if ($use_attributes) { ?>
-    #[Route('/{<?= $entity_identifier ?>}', name: 'show', methods: ['GET'])]
+    #[Route('/{<?= $entity_identifier ?>}/show', name: 'show', methods: ['GET'])]
 <?php } else { ?>
     /**
-     * @Route("/{<?= $entity_identifier ?>}", name="show", methods={"GET"})
+     * @Route("/{<?= $entity_identifier ?>}/show", name="show", methods={"GET"})
      */
 <?php } ?>
     public function show(<?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
@@ -127,10 +131,10 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     }
 
 <?php if ($use_attributes) { ?>
-    #[Route('/{<?= $entity_identifier ?>}', name: 'delete', methods: ['DELETE'])]
+    #[Route('/{<?= $entity_identifier ?>}/delete', name: 'delete', methods: ['DELETE'])]
 <?php } else { ?>
     /**
-     * @Route("/{<?= $entity_identifier ?>}", name="delete", methods={"DELETE"})
+     * @Route("/{<?= $entity_identifier ?>}/delete", name="delete", methods={"DELETE"})
      */
 <?php } ?>
     public function delete(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
