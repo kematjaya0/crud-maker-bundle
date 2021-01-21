@@ -83,12 +83,23 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     public function new(Request $request): Response
     {
         $<?= $entity_var_singular ?> = new <?= $entity_class_name ?>();
+        
+        <?php if ($is_modal):?>
+        $form = $this->createForm(<?= $form_class_name ?>::class, $<?= $entity_var_singular ?>, [
+            'attr' => ['id' => 'ajaxForm', 'action' => $this->generateUrl('<?= $route_name ?>_new')]
+        ]);
+        $result = parent::processFormAjax($request, $form);
+        if ($result['process']) {
+            return $this->json($result);
+        }
+        <?php else:?>
         $form = $this->createForm(<?= $form_class_name ?>::class, $<?= $entity_var_singular ?>);
         $result = parent::processForm($request, $form);
         if ($result) {
             return $this->redirectToRoute('<?= $route_name ?>_index');
         }
-
+        <?php endif ?>
+        
         return $this->render('<?= $templates_path ?>/form.html.twig', [
             '<?= $entity_twig_var_singular ?>' => $<?= $entity_var_singular ?>,
             'form' => $form->createView(), 'title' => 'new'
@@ -118,12 +129,22 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
 <?php } ?>
     public function edit(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
+        <?php if ($is_modal):?>
+        $form = $this->createForm(<?= $form_class_name ?>::class, $<?= $entity_var_singular ?>, [
+            'attr' => ['id' => 'ajaxForm', 'action' => $this->generateUrl('<?= $route_name ?>_edit', ['id' => $<?= $entity_var_singular ?>->getId()])]
+        ]);
+        $result = parent::processFormAjax($request, $form);
+        if ($result['process']) {
+            return $this->json($result);
+        }
+        <?php else:?>
         $form = $this->createForm(<?= $form_class_name ?>::class, $<?= $entity_var_singular ?>);
         $result = parent::processForm($request, $form);
         if ($result) {
             return $this->redirectToRoute('<?= $route_name ?>_index');
         }
-
+        <?php endif ?> 
+        
         return $this->render('<?= $templates_path ?>/form.html.twig', [
             '<?= $entity_twig_var_singular ?>' => $<?= $entity_var_singular ?>,
             'form' => $form->createView(), 'title' => 'edit'

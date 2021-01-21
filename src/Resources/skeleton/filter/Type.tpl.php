@@ -7,7 +7,6 @@
  */
 namespace <?= $namespace ?>;
 
-use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Lexik\Bundle\FormFilterBundle\Filter\Form\Type as Filters;
@@ -15,12 +14,13 @@ use Lexik\Bundle\FormFilterBundle\Filter\FilterOperands;
 <?php foreach ($constraint_use_statements as $className): ?>
 use <?= $className ?>;
 <?php endforeach; ?>
+use Kematjaya\BaseControllerBundle\Filter\AbstractFilterType;
 
 /**
  * Description of <?= $namespace ?>\<?= $class_name ?>
  *
  */
-class <?= $class_name ?> extends AbstractType
+class <?= $class_name ?> extends AbstractFilterType
 {
 
     public function buildForm(FormBuilderInterface $builder, array $options)
@@ -41,25 +41,5 @@ class <?= $class_name ?> extends AbstractType
     <?php endif; ?>
 <?php endforeach; ?>
         ;
-    }
-    
-    /**
-     * Form Name
-     * @return string name of filter form
-     **/
-    public function getBlockPrefix()
-    {
-        return '<?php echo strtolower($bounded_class_name) ?>_filter';
-    }
-
-    /**
-     * add configurations
-     **/
-    public function configureOptions(OptionsResolver $resolver)
-    {
-        $resolver->setDefaults(array(
-            'csrf_protection'   => false,
-            'validation_groups' => array('filtering')
-        ));
     }
 }

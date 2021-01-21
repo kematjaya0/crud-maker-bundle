@@ -48,7 +48,7 @@ class ControllerRenderer
         }
     }
     
-    public function generate(ClassNameDetails $entityClassDetails, Generator $generator, bool $includeFilter = false): ClassNameDetails
+    public function generate(ClassNameDetails $entityClassDetails, Generator $generator, bool $includeFilter = false, bool $modalForm = false): ClassNameDetails
     {
         $entityDoctrineDetails = $this->doctrineHelper->createDoctrineDetails($entityClassDetails->getFullName());
 
@@ -129,6 +129,7 @@ class ControllerRenderer
                 'entity_twig_var_singular' => $entityTwigVarSingular,
                 'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
                 'route_name' => $routeName,
+                'is_modal' => $modalForm
             ],
             'index' => [
                 'entity_class_name' => $entityClassDetails->getShortName(),
@@ -141,6 +142,7 @@ class ControllerRenderer
                 'filter_name' => $filterName,
                 'route_name' => $routeName,
                 'fields_skip' => [$entityDoctrineDetails->getIdentifier()],
+                'is_modal' => $modalForm
             ],
             'show' => [
                 'entity_class_name' => $entityClassDetails->getShortName(),
@@ -148,6 +150,7 @@ class ControllerRenderer
                 'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
                 'entity_fields' => $entityDoctrineDetails->getDisplayFields(),
                 'route_name' => $routeName,
+                'is_modal' => $modalForm
             ],
         ];
 
@@ -156,6 +159,7 @@ class ControllerRenderer
             $controllerClassDetails->getFullName(),
             $baseTemplatePath . DIRECTORY_SEPARATOR . 'crud/controller/Controller.tpl.php',
             array_merge([
+                    'is_modal' => $modalForm,
                     'filter_name' => $filterName,
                     'filter_full_class_name' => $filterClassNameDetails ? $filterClassNameDetails->getFullName() : null,
                     'filter_class_name' => $filterClassNameDetails ? $filterClassNameDetails->getShortName() : null,

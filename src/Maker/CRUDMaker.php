@@ -56,10 +56,12 @@ final class CRUDMaker extends AbstractMaker
             ->setDescription('Creates CRUD for Doctrine entity class provide by kematjaya/crud-maker-bundle')
             ->addArgument('entity-class', InputArgument::OPTIONAL, sprintf('The class name of the entity to create CRUD (e.g. <fg=yellow>%s</>)', Str::asClassName(Str::getRandomTerm())))
             ->addArgument('include-filter', InputArgument::OPTIONAL, sprintf('include filter ?'))
+            ->addArgument('modal-form', InputArgument::OPTIONAL, sprintf('modal form ?'))
         ;
 
         $inputConfig->setArgumentAsNonInteractive('entity-class');
         $inputConfig->setArgumentAsNonInteractive('include-filter');
+        $inputConfig->setArgumentAsNonInteractive('modal-form');
     }
 
     public function interact(InputInterface $input, ConsoleStyle $io, Command $command)
@@ -82,6 +84,13 @@ final class CRUDMaker extends AbstractMaker
             $question = new Question($argument->getDescription(), 'no');
             $value = $io->askQuestion($question);
             $input->setArgument('include-filter', 'y' == strtolower($value) or 'yes' == strtolower($value) ? true: false);
+        }
+        
+        if (null === $input->getArgument('modal-form')) {
+            $argument = $command->getDefinition()->getArgument('modal-form');
+            $question = new Question($argument->getDescription(), 'no');
+            $value = $io->askQuestion($question);
+            $input->setArgument('modal-form', 'y' == strtolower($value) or 'yes' == strtolower($value) ? true: false);
         }
     }
     
@@ -130,7 +139,11 @@ final class CRUDMaker extends AbstractMaker
             'Entity\\'
         );
         
-        $controllerClassDetails = $this->controllerRenderer->generate($entityClassDetails, $generator, $input->getArgument('include-filter'));
+        $controllerClassDetails = $this->controllerRenderer->generate(
+                $entityClassDetails, 
+                $generator, 
+                $input->getArgument('include-filter'),
+                $input->getArgument('modal-form'));
         
         $generator->writeChanges();
 

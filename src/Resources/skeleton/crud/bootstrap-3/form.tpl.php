@@ -1,3 +1,30 @@
+<?php if (isset($filter_class_name)): ?>
+{% extends '@BaseController/modal-layout.html.twig' %}
+
+{% block title %}{{ title|trans}} {{ '<?= strtolower($entity_class_name) ?>'|trans }}{% endblock %}
+
+{% block content %}
+    
+    {{ form_widget(form) }}
+        
+{% endblock %} 
+
+{% block form_start %}
+    {{ form_start(form) }}
+{% endblock %}
+
+{% block form_end %}
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block actions %}
+    <button class="btn btn-sm btn-success">
+        <span class="fa fa-save"></span> 
+        {{ 'save'|trans }}
+    </button>
+{% endblock %}
+    
+<?php else: ?>
 <?= $helper->getHeadPrintCode('Edit '.$entity_class_name) ?>
 
 {% block body %}
@@ -18,4 +45,4 @@
     {{ form_end(form) }} 
     
 {% endblock %} 
-    
+<?php endif ?>
