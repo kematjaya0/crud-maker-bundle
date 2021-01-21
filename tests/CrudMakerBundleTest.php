@@ -6,10 +6,8 @@
 
 namespace Kematjaya\CrudMakerBundle\Tests;
 
-use Kematjaya\CrudMakerBundle\Maker\MakeFilter;
-use Kematjaya\CrudMakerBundle\Maker\MakeKmjCrud;
+use Kematjaya\CrudMakerBundle\Maker\FilterMaker;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -42,20 +40,16 @@ class CrudMakerBundleTest extends WebTestCase
     /**
      * @depends testInstanceClass
      * @param ContainerInterface $container
-     * @return MakeFilter
+     * @return FilterMaker
      */
-    public function testInstanceMakerFilter(ContainerInterface $container):MakeFilter
+    public function testInstanceMakerFilter(ContainerInterface $container):FilterMaker
     {
-        $bag = new ParameterBag([
-            'crud_maker' => $container->getParameter('crud_maker')
-        ]);
-        
         $registry = $this->createConfiguredMock(ManagerRegistry::class, [
             'getManagers' => []
         ]);
         $entityHelper = new DoctrineHelper('Entity', $registry);
         
-        $maker = new MakeFilter($bag, $entityHelper, $container->get('filter_type_renderer'));
+        $maker = new FilterMaker($entityHelper, $container->get('filter_type_renderer'));
         $this->assertTrue(true);
         
         return $maker;
@@ -64,9 +58,9 @@ class CrudMakerBundleTest extends WebTestCase
     /**
      * @depends testInstanceClass
      * @depends testInstanceMakerFilter
-     * @param MakeFilter $maker
+     * @param FilterMaker $maker
      */
-    public function testGenerateFilter(ContainerInterface $container, MakeFilter $maker)
+    public function testGenerateFilter(ContainerInterface $container, FilterMaker $maker)
     {
         $input = $this->createConfiguredMock(InputInterface::class, [
             'getArgument' => 'TestEntity'
@@ -80,61 +74,10 @@ class CrudMakerBundleTest extends WebTestCase
         $fileSystem = new \Symfony\Component\Filesystem\Filesystem();
         $basePath = dirname(__DIR__);
         $arr = ['tests', 'Filter', 'TestEntityFilterType.php'];
-        $file = $basePath . $basePath . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $arr);
-        if ($fileSystem->exists($file)) {
-            $fileSystem->remove($file);
-        }
+        $file = $basePath . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $arr);
         $maker->generate($input, $io, $container->get('generator'));
         $this->assertTrue($fileSystem->exists($file));
+        $fileSystem->remove($file);
     }
     
-    /**
-     * @depends testInstanceClass
-     * @param ContainerInterface $container
-     * @return MakeFilter
-     */
-    public function testInstanceMakerCRUD(ContainerInterface $container):MakeKmjCrud
-    {
-//        $bag = new ParameterBag([
-//            'crud_maker' => $container->getParameter('crud_maker')
-//        ]);
-        
-        $registry = $this->createConfiguredMock(ManagerRegistry::class, [
-            'getManagers' => []
-        ]);
-        $entityHelper = new DoctrineHelper('Entity', $registry);
-        
-        $maker = new MakeKmjCrud($entityHelper, $container->get('filter_type_renderer'));
-        
-        $this->assertTrue(true);
-        
-        return $maker;
-    }
-    
-    /**
-     * @depends testInstanceClass
-     * @depends testInstanceMakerCRUD
-     * @param MakeKmjCrud $maker
-     */
-    public function testGenerateCRUD(ContainerInterface $container, MakeKmjCrud $maker)
-    {
-        $input = $this->createConfiguredMock(InputInterface::class, [
-            'getArgument' => 'TestEntity'
-        ]);
-        $formatter = $this->createConfiguredMock(OutputFormatterInterface::class, []);
-        $output = $this->createConfiguredMock(OutputInterface::class, [
-            'getFormatter' => $formatter
-        ]);
-        $io = new ConsoleStyle($input, $output);
-        
-//        $fileSystem = new \Symfony\Component\Filesystem\Filesystem();
-//        $basePath = dirname(__DIR__);
-//        $arr = ['tests', 'Filter', 'TestEntityFilterType.php'];
-//        $file = $basePath . $basePath . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $arr);
-//        if ($fileSystem->exists($file)) {
-//            $fileSystem->remove($file);
-//        }
-        $maker->generate($input, $io, $container->get('generator'));
-        $this->assertTrue($fileSystem->exists($file));
-    }
 }

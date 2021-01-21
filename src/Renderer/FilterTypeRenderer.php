@@ -1,33 +1,23 @@
 <?php
 
-/*
- * This file is part of the Symfony MakerBundle package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+/**
+ * This file is part of the symfony.
  */
 
 namespace Kematjaya\CrudMakerBundle\Renderer;
 
 use Symfony\Bundle\MakerBundle\Generator;
-use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
+use Symfony\Bundle\MakerBundle\Str;
 
 /**
- * @internal
+ * @package App\Maker\Renderer
+ * @license https://opensource.org/licenses/MIT MIT
+ * @author  Nur Hidayatullah <kematjaya0@gmail.com>
  */
-final class FormFilterTypeRenderer
+final class FilterTypeRenderer 
 {
-    private $generator;
-
-    public function __construct(Generator $generator)
-    {
-        $this->generator = $generator;
-    }
-
-    public function render(ClassNameDetails $formClassDetails, array $formFields, ClassNameDetails $boundClassDetails = null, $identifierField = null, array $constraintClasses = [])
+    public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ClassNameDetails $boundClassDetails = null, string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = [])
     {
         $fieldTypeUseStatements = [];
         $fields = [];
@@ -37,15 +27,19 @@ final class FormFilterTypeRenderer
             $fields[$name] = $this->getFieldTypeOptions($fieldTypeOptions);
             $fieldTypeUseStatements[] = $fieldTypeOptions['type'];
         }
+
+        $mergedTypeUseStatements = array_unique(array_merge($fieldTypeUseStatements, $extraUseClasses));
+        sort($mergedTypeUseStatements);
         
-        $this->generator->generateClass(
+        $baseTemplatePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'skeleton';
+        $generator->generateClass(
             $formClassDetails->getFullName(),
-            dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Resources/skeleton/filter/Type.tpl.php',
+            $baseTemplatePath . DIRECTORY_SEPARATOR . 'filter/Type.tpl.php',
             [
                 'bounded_full_class_name' => $boundClassDetails ? $boundClassDetails->getFullName() : null,
                 'bounded_class_name' => $boundClassDetails ? $boundClassDetails->getShortName() : null,
                 'form_fields' => $fields,
-                'field_type_use_statements' => $fieldTypeUseStatements,
+                'field_type_use_statements' => $mergedTypeUseStatements,
                 'constraint_use_statements' => $constraintClasses,
                 'identifier' => $identifierField
             ]

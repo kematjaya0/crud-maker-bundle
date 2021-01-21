@@ -3,29 +3,14 @@ services:
         autowire: true
         autoconfigure: true
     
-    Symfony\Bundle\MakerBundle\Util\AutoloaderUtil: ~
-    Symfony\Bundle\MakerBundle\Util\ComposerAutoloaderFinder:
-        arguments: ['Kematjaya']
-        
-    Symfony\Component\Filesystem\Filesystem: ~
-    Symfony\Bundle\MakerBundle\FileManager:
-        arguments: 
-            - '@Symfony\Component\Filesystem\Filesystem'
-            - '@Symfony\Bundle\MakerBundle\Util\AutoloaderUtil'
-            - '@Symfony\Bundle\MakerBundle\Util\MakerFileLinkFormatter'
-            - 'var'
-            
-    Symfony\Bundle\MakerBundle\Util\PhpCompatUtil: ~
-    Symfony\Bundle\MakerBundle\Util\MakerFileLinkFormatter: ~
-    Symfony\Bundle\MakerBundle\Generator:
-        arguments: ['@Symfony\Bundle\MakerBundle\FileManager', 'Kematjaya\CrudMakerBundle\Tests', '@Symfony\Bundle\MakerBundle\Util\PhpCompatUtil']
+    filter_type_renderer:
+        alias: Kematjaya\CrudMakerBundle\Renderer\FilterTypeRenderer
+        public: true
         
     generator:
-        alias: Symfony\Bundle\MakerBundle\Generator
+        class: Symfony\Bundle\MakerBundle\Generator
         public: true
-        
-    filter_type_renderer:
-        alias: Kematjaya\CrudMakerBundle\Renderer\FormFilterTypeRenderer
-        public: true
-        
-    
+        arguments:
+            - '@maker.file_manager'
+            - 'Kematjaya\CrudMakerBundle\Tests'
+            - '@maker.php_compat_util'

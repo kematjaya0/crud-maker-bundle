@@ -2,6 +2,8 @@
 
 namespace Kematjaya\CrudMakerBundle\Tests;
 
+use Symfony\Bundle\TwigBundle\TwigBundle;
+use Symfony\Bundle\MakerBundle\MakerBundle;
 use Kematjaya\CrudMakerBundle\CrudMakerBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Component\HttpKernel\Kernel;
@@ -16,6 +18,8 @@ class AppKernelTest extends Kernel
     public function registerBundles()
     {
         return [
+            new TwigBundle(),
+            //new MakerBundle(),
             new CrudMakerBundle(),
             new FrameworkBundle()
         ];

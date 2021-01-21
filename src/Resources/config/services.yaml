@@ -4,13 +4,49 @@ services:
         autoconfigure: true
         public: false
 
-    Kematjaya\CrudMakerBundle\Maker\MakeFilter:
+    Kematjaya\CrudMakerBundle\Renderer\FilterTypeRenderer: ~
+        
+    Kematjaya\CrudMakerBundle\Maker\FilterMaker:
         tags: ['maker.command']
         
-    Kematjaya\CrudMakerBundle\Maker\MakeKmjCrud:
-        tags: ['maker.command']
+#    Kematjaya\CrudMakerBundle\Maker\MakeKmjCrud:
+#        tags: ['maker.command']
         
-    Kematjaya\CrudMakerBundle\Renderer\FormFilterTypeRenderer: ~
-    Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer: ~
-    Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper:
-        arguments: ['Entity']
+    maker.file_link_formatter:
+        class: Symfony\Bundle\MakerBundle\Util\MakerFileLinkFormatter
+        
+    maker.file_manager:
+        class: Symfony\Bundle\MakerBundle\FileManager
+        arguments: 
+            - '@filesystem'
+            - '@maker.autoloader_util'
+            - '@maker.file_link_formatter'
+            - '%kernel.project_dir%'
+            - '%twig.default_path%'
+            
+    maker.autoloader_finder:
+        class: Symfony\Bundle\MakerBundle\Util\ComposerAutoloaderFinder
+        arguments: 
+            - ''
+            
+    maker.autoloader_util:
+        class: Symfony\Bundle\MakerBundle\Util\AutoloaderUtil
+        arguments:
+            - '@maker.autoloader_finder'
+            
+    generator:
+        class: Symfony\Bundle\MakerBundle\Generator
+        arguments:
+            - '@maker.file_manager'
+            - ''
+            - '@maker.php_compat_util'
+            
+    maker.php_compat_util:
+        class: Symfony\Bundle\MakerBundle\Util\PhpCompatUtil
+        arguments:
+            - '@maker.file_manager'
+            
+    Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper: 
+        arguments: 
+            - 'App\Entity'
+            - '@doctrine'
