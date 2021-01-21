@@ -7,6 +7,7 @@
 namespace Kematjaya\CrudMakerBundle\Tests;
 
 use Kematjaya\CrudMakerBundle\Maker\FilterMaker;
+use Kematjaya\CrudMakerBundle\Maker\CRUDMaker;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Input\InputInterface;
@@ -80,4 +81,18 @@ class CrudMakerBundleTest extends WebTestCase
         $fileSystem->remove($file);
     }
     
+    
+//    public function testInstanceCRUDMaker(ContainerInterface $container):CRUDMaker
+//    {
+//        $registry = $this->createConfiguredMock(ManagerRegistry::class, [
+//            'getManagers' => []
+//        ]);
+//        $entityHelper = new DoctrineHelper('Entity', $registry);
+//        
+//        $maker = new CRUDMaker($container->get('controller_renderer'), $container->get('form_renderer'), $entityHelper);
+//        dump($maker);exit;
+//        $this->assertTrue(true);
+//        
+//        return $maker;
+//    }
 }

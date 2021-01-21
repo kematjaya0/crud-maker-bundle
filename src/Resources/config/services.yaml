@@ -5,12 +5,12 @@ services:
         public: false
 
     Kematjaya\CrudMakerBundle\Renderer\FilterTypeRenderer: ~
-        
+    Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer: ~
     Kematjaya\CrudMakerBundle\Maker\FilterMaker:
         tags: ['maker.command']
         
-#    Kematjaya\CrudMakerBundle\Maker\MakeKmjCrud:
-#        tags: ['maker.command']
+    Kematjaya\CrudMakerBundle\Maker\CRUDMaker:
+        tags: ['maker.command']
         
     maker.file_link_formatter:
         class: Symfony\Bundle\MakerBundle\Util\MakerFileLinkFormatter
