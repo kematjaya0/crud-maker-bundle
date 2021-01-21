@@ -50,3 +50,7 @@ services:
         arguments: 
             - 'App\Entity'
             - '@doctrine'
+            
+    Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer:
+        arguments:
+            - '@generator'
