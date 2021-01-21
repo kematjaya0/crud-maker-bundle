@@ -74,15 +74,21 @@ class ControllerRenderer
             'Controller'
         );
         
-        $iter = 0;
-        do {
-            $formClassDetails = $generator->createClassNameDetails(
-                $entityClassDetails->getRelativeNameWithoutSuffix().($iter ?: '').'Type',
-                'Form\\',
-                'Type'
+        $formClassDetails = $generator->createClassNameDetails(
+            $entityClassDetails->getRelativeNameWithoutSuffix().'Type',
+            'Form\\',
+            'Type'
+        );
+        
+        $classes = get_declared_classes();
+        if (!in_array($formClassDetails->getFullName(), $classes)) {
+            $formTypeRenderer = new FormTypeRenderer($generator);
+            $formTypeRenderer->render(
+                $formClassDetails,
+                $entityDoctrineDetails->getFormFields(),
+                $entityClassDetails
             );
-            ++$iter;
-        } while (class_exists($formClassDetails->getFullName()));
+        }
         
         $entityVarPlural = lcfirst($this->pluralize($entityClassDetails->getShortName()));
         $entityVarSingular = lcfirst($this->singularize($entityClassDetails->getShortName()));
@@ -102,13 +108,6 @@ class ControllerRenderer
                 'FilterType'
             );
         }
-            
-        $formTypeRenderer = new FormTypeRenderer($generator);
-        $formTypeRenderer->render(
-            $formClassDetails,
-            $entityDoctrineDetails->getFormFields(),
-            $entityClassDetails
-        );
         
         $templates = [
             '_delete_form' => [
