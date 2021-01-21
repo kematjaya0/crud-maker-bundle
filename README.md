@@ -17,7 +17,7 @@ if use modal add to base template
 ```
 <div class="modal fade" id="myModal">
     <div class="modal-content" id="modal-dialog">
-        <div style="text-align: center"><img src="{{ asset('bundles/adminlte/images/loading.gif') }}" style="width: 20px"/></div>
+        <div style="text-align: center"><img src="{{ asset('bundles/basecontroller/images/loading.gif') }}" style="width: 20px"/></div>
     </div>
 </div>
 ```
