@@ -3,6 +3,7 @@
 namespace <?= $namespace; ?>;
 
 use <?= $entity_full_class_name ?>; 
+use Kematjaya\BaseControllerBundle\FunctionalTest\Controller\AbstractCRUDControllerTest;
 
 class <?= $class_name ?> extends AbstractCRUDControllerTest <?= "\n" ?>
 {
