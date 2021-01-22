@@ -34,7 +34,7 @@
         
         {{ form_widget(form) }}
         
-        <button class="btn btn-sm btn-success">
+        <button type="submit" class="btn btn-sm btn-success">
             <span class="fa fa-save"></span> 
             {{ 'save'|trans }}
         </button>

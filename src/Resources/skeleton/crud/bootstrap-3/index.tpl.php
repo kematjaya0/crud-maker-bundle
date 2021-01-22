@@ -38,11 +38,11 @@
                     <td>{{ <?= $helper->getEntityFieldPrintCode($entity_twig_var_singular, $field) ?> }}</td>
                 <?php endforeach; ?>
                     <td>
-                        <a class="btn btn-xs btn-primary" href="{{ path('<?= $route_name ?>_show', {'<?= $entity_identifier ?>': <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}) }}"><span class="fa fa-desktop"></span> {{ 'show'|trans }}</a>
-                        
                         <?php if ($is_modal): ?>
+                        <a class="btn btn-xs btn-primary" href="{{ path('<?= $route_name ?>_show', {'<?= $entity_identifier ?>': <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}) }}" data-toggle="modal" data-target="#myModal"><span class="fa fa-desktop"></span> {{ 'show'|trans }}</a>
                         <a class="btn btn-xs btn-info" href="{{ path('<?= $route_name ?>_edit', {'<?= $entity_identifier ?>': <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}) }}" data-toggle="modal" data-target="#myModal"><span class="fa fa-edit"></span> {{ 'edit'|trans }}</a>
                         <?php else:?>
+                        <a class="btn btn-xs btn-primary" href="{{ path('<?= $route_name ?>_show', {'<?= $entity_identifier ?>': <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}) }}"><span class="fa fa-desktop"></span> {{ 'show'|trans }}</a>
                         <a class="btn btn-xs btn-info" href="{{ path('<?= $route_name ?>_edit', {'<?= $entity_identifier ?>': <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}) }}"><span class="fa fa-edit"></span> {{ 'edit'|trans }}</a>
                         <?php endif?>
                         {{ include('<?= $templates_path ?>/_delete_form.html.twig', {<?= $entity_twig_var_singular ?>: <?= $entity_twig_var_singular ?>}) }}
