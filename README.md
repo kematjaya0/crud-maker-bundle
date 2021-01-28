@@ -23,6 +23,15 @@ if use modal add to base template
 ```
 and add jquery.js
 
+- if you want to change generator template, you can set template path in config
+```
+# config/packages/crud_generator.yaml
+# assume your template in root-project/generator
+crud_maker:
+    templates:
+        path: '%kernel.project_dir%/generator'
+
+```
 thank to:
 - Filter type provide by https://github.com/lexik/LexikFormFilterBundle
 - pagination provide by https://github.com/KnpLabs/KnpPaginatorBundle
