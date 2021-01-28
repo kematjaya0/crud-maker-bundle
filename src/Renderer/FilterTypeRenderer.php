@@ -15,7 +15,7 @@ use Symfony\Bundle\MakerBundle\Str;
  * @license https://opensource.org/licenses/MIT MIT
  * @author  Nur Hidayatullah <kematjaya0@gmail.com>
  */
-final class FilterTypeRenderer 
+final class FilterTypeRenderer extends AbstractRenderer
 {
     public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ClassNameDetails $boundClassDetails = null, string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = [])
     {
@@ -31,10 +31,9 @@ final class FilterTypeRenderer
         $mergedTypeUseStatements = array_unique(array_merge($fieldTypeUseStatements, $extraUseClasses));
         sort($mergedTypeUseStatements);
         
-        $baseTemplatePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'skeleton';
         $generator->generateClass(
             $formClassDetails->getFullName(),
-            $baseTemplatePath . DIRECTORY_SEPARATOR . 'filter/Type.tpl.php',
+            $this->getPath('filter/Type.tpl.php'),
             [
                 'bounded_full_class_name' => $boundClassDetails ? $boundClassDetails->getFullName() : null,
                 'bounded_class_name' => $boundClassDetails ? $boundClassDetails->getShortName() : null,

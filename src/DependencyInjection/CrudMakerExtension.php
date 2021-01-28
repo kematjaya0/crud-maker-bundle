@@ -26,5 +26,3 @@ class CrudMakerExtension extends Extension
         $container->setParameter($this->getAlias(), $config);
     }
 }
-//"pagerfanta/pagerfanta": "^2.0",
-//"white-october/pagerfanta-bundle": "^1.2"

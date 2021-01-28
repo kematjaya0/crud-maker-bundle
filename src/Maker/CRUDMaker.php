@@ -6,6 +6,7 @@
 
 namespace Kematjaya\CrudMakerBundle\Maker;
 
+use Kematjaya\Breadcrumb\KmjBreadcrumbBundle;
 use Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer;
 use Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
@@ -37,10 +38,23 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 final class CRUDMaker extends AbstractMaker
 {
     
+    /**
+     * 
+     * @var ControllerRenderer
+     */
     private $controllerRenderer;
     
+    
+    /**
+     * 
+     * @var DoctrineHelper
+     */
     private $doctrineHelper;
     
+    /**
+     * 
+     * @var FormTypeRenderer
+     */
     private $formTypeRenderer;
     
     public function __construct(ControllerRenderer $controllerRenderer, FormTypeRenderer $formTypeRenderer, DoctrineHelper $doctrineHelper) 
@@ -99,6 +113,11 @@ final class CRUDMaker extends AbstractMaker
         $dependencies->addClassDependency(
             Route::class,
             'router'
+        );
+        
+        $dependencies->addClassDependency(
+            KmjBreadcrumbBundle::class,
+            'breadcrumb-bundle'
         );
 
         $dependencies->addClassDependency(

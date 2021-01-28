@@ -25,6 +25,7 @@ class Configuration implements ConfigurationInterface
         
         $this->addEntityConfiguration($rootNode->children());
         $this->addFilterConfiguration($rootNode->children());
+        $this->addTemplateConfiguration($rootNode->children());
         
         return $treeBuilder;
     }
@@ -52,6 +53,19 @@ class Configuration implements ConfigurationInterface
                     ->children()
                         ->scalarNode('namespace_prefix')->defaultValue('Filter\\')->end()
                         ->scalarNode('suffix')->defaultValue('FilterType')->end()
+                    ->end()
+                ->end()
+            ->end();
+    }
+    
+    public function addTemplateConfiguration(NodeBuilder $node):void
+    {
+        $node
+            ->arrayNode('templates')
+                ->beforeNormalization()->castToArray()->end()
+                ->addDefaultsIfNotSet()
+                    ->children()
+                        ->scalarNode('path')->defaultValue(null)->end()
                     ->end()
                 ->end()
             ->end();

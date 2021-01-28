@@ -13,6 +13,7 @@ use <?= $filter_full_class_name ?>;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Kematjaya\Breadcrumb\Lib\Builder as BreacrumbBuilder;
 <?php if (isset($filter_full_class_name)): ?>
 use Kematjaya\BaseControllerBundle\Controller\BaseLexikFilterController as BaseController;
 <?php else:?>
@@ -36,8 +37,9 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
      */
 <?php } ?>
 <?php if (isset($repository_full_class_name)): ?>
-    public function index(Request $request, <?= $repository_class_name ?> $<?= $repository_var ?>): Response
+    public function index(Request $request, BreacrumbBuilder $builder, <?= $repository_class_name ?> $<?= $repository_var ?>): Response
     {
+        $builder->add('<?= $route_name ?>');
         <?php if (isset($filter_class_name)): ?>
         $form = $this->createFormFilter(<?= $filter_class_name ?>::class);
         $queryBuilder = $this->buildFilter($request, $form, $<?= $repository_var ?>->createQueryBuilder('this'));
@@ -53,8 +55,9 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         ]);
     }
 <?php else: ?>
-    public function index(): Response
+    public function index(BreacrumbBuilder $builder): Response
     {
+        $builder->add('<?= $route_name ?>');
         $repo = $this->getDoctrine()
             ->getRepository(<?= $entity_class_name ?>::class);
         <?php if (isset($filter_class_name)): ?>
@@ -80,8 +83,15 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
      * @Route("/new", name="new", methods={"GET","POST"})
      */
 <?php } ?>
+    <?php if ($is_modal):?>
     public function new(Request $request): Response
     {
+    <?php else:?>
+    public function new(Request $request, BreacrumbBuilder $builder): Response
+    {
+        $builder->add('<?= $route_name ?>', '<?= $route_name ?>_index');
+        $builder->add('new');
+    <?php endif ?>
         $<?= $entity_var_singular ?> = new <?= $entity_class_name ?>();
         
         <?php if ($is_modal):?>
@@ -113,8 +123,15 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
      * @Route("/{<?= $entity_identifier ?>}/show", name="show", methods={"GET"})
      */
 <?php } ?>
-    public function show(<?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
+    <?php if ($is_modal):?>
+    public function show( <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
+    <?php else:?>
+    public function show(BreacrumbBuilder $builder, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
+    {
+        $builder->add('<?= $route_name ?>', '<?= $route_name ?>_index');
+        $builder->add('show');
+    <?php endif ?>
         return $this->render('<?= $templates_path ?>/show.html.twig', [
             '<?= $entity_twig_var_singular ?>' => $<?= $entity_var_singular ?>,
         ]);
@@ -127,8 +144,15 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
      * @Route("/{<?= $entity_identifier ?>}/edit", name="edit", methods={"GET","POST"})
      */
 <?php } ?>
+    <?php if ($is_modal):?>
     public function edit(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
+    <?php else:?>
+    public function edit(Request $request, BreacrumbBuilder $builder, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
+    {
+        $builder->add('<?= $route_name ?>', '<?= $route_name ?>_index');
+        $builder->add('edit');
+    <?php endif ?>
         <?php if ($is_modal):?>
         $form = $this->createForm(<?= $form_class_name ?>::class, $<?= $entity_var_singular ?>, [
             'attr' => ['id' => 'ajaxForm', 'action' => $this->generateUrl('<?= $route_name ?>_edit', ['id' => $<?= $entity_var_singular ?>->getId()])]

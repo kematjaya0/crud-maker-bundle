@@ -15,13 +15,14 @@ use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Util\ClassDetails;
+use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 
 /**
  * @package App\Maker\Helper
  * @license https://opensource.org/licenses/MIT MIT
  * @author  Nur Hidayatullah <kematjaya0@gmail.com>
  */
-class ControllerRenderer 
+class ControllerRenderer extends AbstractRenderer
 {
     
     /**
@@ -38,7 +39,7 @@ class ControllerRenderer
     
     private $inflector;
     
-    public function __construct(DoctrineHelper $doctrineHelper, FilterTypeRenderer $filterTypeRenderer) 
+    public function __construct(ContainerBagInterface $bag, DoctrineHelper $doctrineHelper, FilterTypeRenderer $filterTypeRenderer) 
     {
         $this->filterTypeRenderer = $filterTypeRenderer;
         $this->doctrineHelper = $doctrineHelper;
@@ -46,6 +47,8 @@ class ControllerRenderer
         if (class_exists(InflectorFactory::class)) {
             $this->inflector = InflectorFactory::create()->build();
         }
+        
+        parent::__construct($bag);
     }
     
     public function generate(ClassNameDetails $entityClassDetails, Generator $generator, bool $includeFilter = false, bool $modalForm = false): ClassNameDetails
@@ -153,10 +156,9 @@ class ControllerRenderer
             ],
         ];
 
-        $baseTemplatePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'skeleton';
         $generator->generateController(
             $controllerClassDetails->getFullName(),
-            $baseTemplatePath . DIRECTORY_SEPARATOR . 'crud/controller/Controller.tpl.php',
+            $this->getPath('crud/controller/Controller.tpl.php'),
             array_merge([
                     'is_modal' => $modalForm,
                     'filter_name' => $filterName,
@@ -182,7 +184,7 @@ class ControllerRenderer
         foreach ($templates as $template => $variables) {
             $generator->generateTemplate(
                 $templatesPath.'/'.$template.'.html.twig',
-                $baseTemplatePath . DIRECTORY_SEPARATOR . 'crud/bootstrap-3/'.$template.'.tpl.php',
+                $this->getPath('crud/bootstrap-3/'.$template.'.tpl.php'),
                 $variables
             );
         }

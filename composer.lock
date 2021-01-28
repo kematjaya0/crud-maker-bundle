@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e3a5ce6b261e91dc9d7b161de4debb38",
+    "content-hash": "ed9d302c6f637445d1a9719e6f6938bf",
     "packages": [
         {
             "name": "composer/package-versions-deprecated",
@@ -252,16 +252,16 @@
         },
         {
             "name": "doctrine/collections",
-            "version": "1.7.x-dev",
+            "version": "1.6.x-dev",
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/collections.git",
-                "reference": "c5f6fffe61e65c82bd005d76350ff52da1f1a3c0"
+                "reference": "1b04ff044e720412994f63e51e3f206942318d07"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/collections/zipball/c5f6fffe61e65c82bd005d76350ff52da1f1a3c0",
-                "reference": "c5f6fffe61e65c82bd005d76350ff52da1f1a3c0",
+                "url": "https://api.github.com/repos/doctrine/collections/zipball/1b04ff044e720412994f63e51e3f206942318d07",
+                "reference": "1b04ff044e720412994f63e51e3f206942318d07",
                 "shasum": ""
             },
             "require": {
@@ -273,6 +273,7 @@
                 "phpunit/phpunit": "^7.5 || ^8.5 || ^9.1.5",
                 "vimeo/psalm": "^4.2.1"
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -315,9 +316,9 @@
             ],
             "support": {
                 "issues": "https://github.com/doctrine/collections/issues",
-                "source": "https://github.com/doctrine/collections/tree/1.7.x"
+                "source": "https://github.com/doctrine/collections/tree/1.6.x"
             },
-            "time": "2021-01-15T06:54:13+00:00"
+            "time": "2021-01-20T21:58:52+00:00"
         },
         {
             "name": "doctrine/common",
@@ -1241,6 +1242,54 @@
                 "source": "https://github.com/kematjaya0/base-controller-bundle/tree/1.8.0"
             },
             "time": "2021-01-22T02:08:56+00:00"
+        },
+        {
+            "name": "kematjaya/breadcrumb-bundle",
+            "version": "1.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kematjaya0/breadcrumb-bundle.git",
+                "reference": "7495c6efd08306bb3dfcb8e1db3554ba8c9bf1fb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kematjaya0/breadcrumb-bundle/zipball/7495c6efd08306bb3dfcb8e1db3554ba8c9bf1fb",
+                "reference": "7495c6efd08306bb3dfcb8e1db3554ba8c9bf1fb",
+                "shasum": ""
+            },
+            "require": {
+                "doctrine/collections": "^1.5",
+                "symfony/framework-bundle": "^4.0|^5.0",
+                "symfony/templating": "^4.0|^5.0",
+                "symfony/translation": "^4.0|^5.0",
+                "symfony/twig-bundle": "^4.0|^5.0",
+                "twig/twig": "^2.0|^3.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^6.4",
+                "symfony/browser-kit": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kematjaya\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "kematjaya0",
+                    "email": "kematjaya0@gmail.com"
+                }
+            ],
+            "support": {
+                "issues": "https://github.com/kematjaya0/breadcrumb-bundle/issues",
+                "source": "https://github.com/kematjaya0/breadcrumb-bundle/tree/1.2.1"
+            },
+            "time": "2021-01-28T12:53:45+00:00"
         },
         {
             "name": "knplabs/knp-components",
@@ -4564,6 +4613,75 @@
                 }
             ],
             "time": "2021-01-12T14:28:55+00:00"
+        },
+        {
+            "name": "symfony/templating",
+            "version": "5.x-dev",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/templating.git",
+                "reference": "0d407aacbd53d3f0074e701999ff66168d431345"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/templating/zipball/0d407aacbd53d3f0074e701999ff66168d431345",
+                "reference": "0d407aacbd53d3f0074e701999ff66168d431345",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.2.5",
+                "symfony/polyfill-ctype": "~1.8"
+            },
+            "require-dev": {
+                "psr/log": "~1.0"
+            },
+            "suggest": {
+                "psr/log-implementation": "For using debug logging in loaders"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Component\\Templating\\": ""
+                },
+                "exclude-from-classmap": [
+                    "/Tests/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Provides all the tools needed to build any kind of template system",
+            "homepage": "https://symfony.com",
+            "support": {
+                "source": "https://github.com/symfony/templating/tree/5.x"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2021-01-11T09:50:50+00:00"
         },
         {
             "name": "symfony/translation",
