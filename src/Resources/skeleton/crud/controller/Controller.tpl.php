@@ -131,6 +131,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     {
         $builder->add('<?= $route_name ?>', '<?= $route_name ?>_index');
         $builder->add('show');
+        $builder->add((string) $<?= $entity_var_singular ?>);
     <?php endif ?>
         return $this->render('<?= $templates_path ?>/show.html.twig', [
             '<?= $entity_twig_var_singular ?>' => $<?= $entity_var_singular ?>,
@@ -152,6 +153,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     {
         $builder->add('<?= $route_name ?>', '<?= $route_name ?>_index');
         $builder->add('edit');
+        $builder->add((string) $<?= $entity_var_singular ?>);
     <?php endif ?>
         <?php if ($is_modal):?>
         $form = $this->createForm(<?= $form_class_name ?>::class, $<?= $entity_var_singular ?>, [
