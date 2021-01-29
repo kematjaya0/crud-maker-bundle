@@ -17,7 +17,7 @@ use Kematjaya\Breadcrumb\Lib\Builder as BreacrumbBuilder;
 <?php if (isset($filter_full_class_name)): ?>
 use Kematjaya\BaseControllerBundle\Controller\BaseLexikFilterController as BaseController;
 <?php else:?>
-use Kematjaya\BaseControllerBundle\Controller\BaseController as BaseController;
+use Kematjaya\BaseControllerBundle\Controller\BasePaginationController as BaseController;
 <?php endif ?>
 
 <?php if ($use_attributes) { ?>
