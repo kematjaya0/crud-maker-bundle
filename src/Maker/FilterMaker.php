@@ -121,4 +121,12 @@ final class FilterMaker extends AbstractMaker
         return 'make:kmj-filter';
     }
 
+    /**
+     * 
+     * @return string
+     */
+    public static function getCommandDescription()
+    {
+        return 'generator for lexik filter class';
+    }
 }

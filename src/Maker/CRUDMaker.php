@@ -176,4 +176,12 @@ final class CRUDMaker extends AbstractMaker
         return 'make:kmj-crud';
     }
 
+    /**
+     * 
+     * @return string
+     */
+    public static function getCommandDescription()
+    {
+        return 'generator for crud with bootstrap';
+    }
 }
