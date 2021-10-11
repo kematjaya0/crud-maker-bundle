@@ -52,6 +52,7 @@ services:
     Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper: 
         arguments: 
             - 'App\Entity'
+            - '@maker.php_compat_util'
             - '@doctrine'
             
     Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer:
