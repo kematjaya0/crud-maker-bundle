@@ -62,7 +62,7 @@ final class FilterTypeRenderer extends AbstractRenderer
                 break;
             default:
                 $fieldTypeOptions['type'] = 'Filters\TextFilterType';
-                $fieldTypeOptions['options_code'] = "'condition_pattern' => FilterOperands::STRING_BOTH";
+                $fieldTypeOptions['options_code'] = "'condition_pattern' => FilterOperands::STRING_CONTAINS";
                 break;
         }
         
