@@ -69,14 +69,17 @@ final class CRUDMaker extends AbstractMaker
         $command
             ->setDescription('Creates CRUD for Doctrine entity class provide by kematjaya/crud-maker-bundle')
             ->addArgument('entity-class', InputArgument::OPTIONAL, sprintf('The class name of the entity to create CRUD (e.g. <fg=yellow>%s</>)', Str::asClassName(Str::getRandomTerm())))
-            ->addArgument('namespace', InputArgument::OPTIONAL, sprintf("additional controller namespace"))
+            ->addArgument('namespace', InputArgument::OPTIONAL, sprintf("additional controller namespace (<fg=yellow>%s</>)", "enter if default"))
             ->addArgument('include-filter', InputArgument::OPTIONAL, sprintf('include filter ?'))
             ->addArgument('modal-form', InputArgument::OPTIONAL, sprintf('modal form ?'))
+            ->addArgument("theme", InputArgument::OPTIONAL, sprintf("view theme, available (<fg=yellow>%s</>)", implode(", ", $this->getAvailableThemes())))
         ;
 
         $inputConfig->setArgumentAsNonInteractive('entity-class');
+        $inputConfig->setArgumentAsNonInteractive('namespace');
         $inputConfig->setArgumentAsNonInteractive('include-filter');
         $inputConfig->setArgumentAsNonInteractive('modal-form');
+        $inputConfig->setArgumentAsNonInteractive('theme');
     }
 
     public function interact(InputInterface $input, ConsoleStyle $io, Command $command)
@@ -88,10 +91,23 @@ final class CRUDMaker extends AbstractMaker
 
             $question = new Question($argument->getDescription());
             $question->setAutocompleterValues($entities);
-
             $value = $io->askQuestion($question);
 
             $input->setArgument('entity-class', $value);
+        }
+        
+        if (null === $input->getArgument('namespace')) {
+            $argument = $command->getDefinition()->getArgument('namespace');
+            $question = new Question($argument->getDescription());
+            $value = $io->askQuestion($question);
+            $input->setArgument('namespace', null !== $value ? $value : "-");
+        }
+        
+        if (null === $input->getArgument('theme')) {
+            $argument = $command->getDefinition()->getArgument('theme');
+            $question = new Question($argument->getDescription(), "bootstrap-3");
+            $value = $io->askQuestion($question);
+            $input->setArgument('theme', $value);
         }
         
         if (null === $input->getArgument('include-filter')) {
@@ -160,10 +176,13 @@ final class CRUDMaker extends AbstractMaker
         );
         
         $controllerClassDetails = $this->controllerRenderer->generate(
-                $entityClassDetails, 
-                $generator, 
-                $input->getArgument('include-filter'),
-                $input->getArgument('modal-form'));
+            $entityClassDetails, 
+            $generator, 
+            $input->getArgument('namespace'),
+            $input->getArgument('theme'),
+            $input->getArgument('include-filter'),
+            $input->getArgument('modal-form')
+        );
         
         $generator->writeChanges();
 
@@ -184,5 +203,23 @@ final class CRUDMaker extends AbstractMaker
     public static function getCommandDescription()
     {
         return 'generator for crud with bootstrap';
+    }
+    
+    protected function getAvailableThemes():array 
+    {
+        $viewPath = "crud/views";
+        $themes = [];
+        foreach ($this->controllerRenderer->getBasePath() as $path) {
+            $dir = $path . DIRECTORY_SEPARATOR . $viewPath;
+            if (!is_dir($dir)) {
+                continue;
+            }
+            
+            $themes = array_merge($themes, array_filter(scandir($dir), function (string $name) {
+                return "." !== $name and ".." !== $name;
+            }));
+        }
+        
+        return array_unique($themes);
     }
 }

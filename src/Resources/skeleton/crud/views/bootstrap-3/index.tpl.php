@@ -4,10 +4,10 @@
     <h1>{{ '<?= strtolower($entity_class_name) ?>'|trans }}</h1>
     <div class="pull-right">
         <?php if ($is_modal): ?>
-        <a class="btn btn-sm btn-success" href="{{ path('<?= $route_name ?>_new') }}" data-toggle="modal" data-target="#myModal">
+        <a class="btn btn-sm btn-success" href="{{ path('<?= $route_name ?>_create') }}" data-toggle="modal" data-target="#myModal">
             <span class="fa fa-plus"></span> {{ 'create'|trans }}</a>
         <?php else:?>
-        <a class="btn btn-sm btn-success" href="{{ path('<?= $route_name ?>_new') }}">
+        <a class="btn btn-sm btn-success" href="{{ path('<?= $route_name ?>_create') }}">
             <span class="fa fa-plus"></span> {{ 'create'|trans }}</a>
         <?php endif ?>
     </div>

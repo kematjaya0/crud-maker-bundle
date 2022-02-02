@@ -28,6 +28,10 @@ abstract class AbstractRenderer
         $this->basePath = array_merge($path, [dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'skeleton']);
     }
     
+    public function getBasePath():array
+    {
+        return $this->basePath;
+    }
     /**
      * 
      * @param string $filename

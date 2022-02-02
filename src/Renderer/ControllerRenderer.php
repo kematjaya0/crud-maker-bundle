@@ -51,12 +51,11 @@ class ControllerRenderer extends AbstractRenderer
         parent::__construct($bag);
     }
     
-    public function generate(ClassNameDetails $entityClassDetails, Generator $generator, bool $includeFilter = false, bool $modalForm = false): ClassNameDetails
+    public function generate(ClassNameDetails $entityClassDetails, Generator $generator, string $additionalNameSpace, string $theme, bool $includeFilter = false, bool $modalForm = false): ClassNameDetails
     {
         $entityDoctrineDetails = $this->doctrineHelper->createDoctrineDetails($entityClassDetails->getFullName());
 
         $repositoryVars = [];
-
         if (null !== $entityDoctrineDetails->getRepositoryClass()) {
             $repositoryClassDetails = $generator->createClassNameDetails(
                 '\\'.$entityDoctrineDetails->getRepositoryClass(),
@@ -71,9 +70,10 @@ class ControllerRenderer extends AbstractRenderer
             ];
         }
         
+        $controllerNameSpace = "-" !== $additionalNameSpace ? sprintf("Controller\\%s\\", $additionalNameSpace) : "Controller\\";
         $controllerClassDetails = $generator->createClassNameDetails(
             $entityClassDetails->getRelativeNameWithoutSuffix().'Controller',
-            'Controller\\',
+            $controllerNameSpace,
             'Controller'
         );
         
@@ -99,8 +99,9 @@ class ControllerRenderer extends AbstractRenderer
         $entityTwigVarPlural = Str::asTwigVariable($entityVarPlural);
         $entityTwigVarSingular = Str::asTwigVariable($entityVarSingular);
 
+        $additionalNameSpaceLower = "-" !== $additionalNameSpace ? implode(DIRECTORY_SEPARATOR, array_filter(explode("\\", strtolower($additionalNameSpace)))) : null;
         $routeName = Str::asRouteName($controllerClassDetails->getRelativeNameWithoutSuffix());
-        $templatesPath = Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix());
+        $templatesPath = null !== $additionalNameSpaceLower ? $additionalNameSpaceLower . DIRECTORY_SEPARATOR . Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix()) : Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix());
         
         $filterClassNameDetails = null;
         $filterName = 'filter';
@@ -144,7 +145,7 @@ class ControllerRenderer extends AbstractRenderer
                 'filter_name' => $filterName,
                 'route_name' => $routeName,
                 'fields_skip' => [$entityDoctrineDetails->getIdentifier()],
-                'is_modal' => $modalForm
+                'is_modal' => $modalForm,
             ],
             'show' => [
                 'entity_class_name' => $entityClassDetails->getShortName(),
@@ -184,7 +185,9 @@ class ControllerRenderer extends AbstractRenderer
         foreach ($templates as $template => $variables) {
             $generator->generateTemplate(
                 $templatesPath.'/'.$template.'.html.twig',
-                $this->getPath('crud/bootstrap-3/'.$template.'.tpl.php'),
+                $this->getPath(
+                    sprintf('crud/views/%s/%s.tpl.php', $theme, $template)
+                ),
                 $variables
             );
         }
