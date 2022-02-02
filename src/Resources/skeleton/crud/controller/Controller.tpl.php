@@ -77,10 +77,10 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
 <?php endif ?>
 
 <?php if ($use_attributes) { ?>
-    #[Route('/create', name: 'new', methods: ['GET', 'POST'])]
+    #[Route('/create', name: 'create', methods: ['GET', 'POST'])]
 <?php } else { ?>
     /**
-     * @Route("/create", name="new", methods={"GET","POST"})
+     * @Route("/create", name="create", methods={"GET","POST"})
      */
 <?php } ?>
     <?php if ($is_modal):?>
