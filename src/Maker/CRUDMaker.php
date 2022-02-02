@@ -69,6 +69,7 @@ final class CRUDMaker extends AbstractMaker
         $command
             ->setDescription('Creates CRUD for Doctrine entity class provide by kematjaya/crud-maker-bundle')
             ->addArgument('entity-class', InputArgument::OPTIONAL, sprintf('The class name of the entity to create CRUD (e.g. <fg=yellow>%s</>)', Str::asClassName(Str::getRandomTerm())))
+            ->addArgument('namespace', InputArgument::OPTIONAL, sprintf("additional controller namespace"))
             ->addArgument('include-filter', InputArgument::OPTIONAL, sprintf('include filter ?'))
             ->addArgument('modal-form', InputArgument::OPTIONAL, sprintf('modal form ?'))
         ;

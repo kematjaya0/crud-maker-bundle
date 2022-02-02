@@ -77,26 +77,26 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
 <?php endif ?>
 
 <?php if ($use_attributes) { ?>
-    #[Route('/new', name: 'new', methods: ['GET', 'POST'])]
+    #[Route('/create', name: 'new', methods: ['GET', 'POST'])]
 <?php } else { ?>
     /**
-     * @Route("/new", name="new", methods={"GET","POST"})
+     * @Route("/create", name="new", methods={"GET","POST"})
      */
 <?php } ?>
     <?php if ($is_modal):?>
-    public function new(Request $request): Response
+    public function create(Request $request): Response
     {
     <?php else:?>
-    public function new(Request $request, BreacrumbBuilder $builder): Response
+    public function create(Request $request, BreacrumbBuilder $builder): Response
     {
         $builder->add('<?= $route_name ?>', '<?= $route_name ?>_index');
-        $builder->add('new');
+        $builder->add('create');
     <?php endif ?>
         $<?= $entity_var_singular ?> = new <?= $entity_class_name ?>();
         
         <?php if ($is_modal):?>
         $form = $this->createForm(<?= $form_class_name ?>::class, $<?= $entity_var_singular ?>, [
-            'attr' => ['id' => 'ajaxForm', 'action' => $this->generateUrl('<?= $route_name ?>_new')]
+            'attr' => ['id' => 'ajaxForm', 'action' => $this->generateUrl('<?= $route_name ?>_create')]
         ]);
         $result = parent::processFormAjax($request, $form);
         if ($result['process']) {
@@ -112,7 +112,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         
         return $this->render('<?= $templates_path ?>/form.html.twig', [
             '<?= $entity_twig_var_singular ?>' => $<?= $entity_var_singular ?>,
-            'form' => $form->createView(), 'title' => 'new'
+            'form' => $form->createView(), 'title' => 'create'
         ]);
     }
 

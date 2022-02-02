@@ -8,7 +8,6 @@
 namespace <?= $namespace ?>;
 
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\OptionsResolver\OptionsResolver;
 use Lexik\Bundle\FormFilterBundle\Filter\Form\Type as Filters;
 use Lexik\Bundle\FormFilterBundle\Filter\FilterOperands;
 <?php foreach ($constraint_use_statements as $className): ?>
@@ -31,7 +30,7 @@ class <?= $class_name ?> extends AbstractFilterType
         <?php continue;?>
     <?php endif;?>
     <?php if (null === $typeOptions['type'] && !$typeOptions['options_code']): ?>
-        ->add('<?= $form_field ?>', Filters\TextFilterType::class, ['condition_pattern' => FilterOperands::STRING_BOTH])
+        ->add('<?= $form_field ?>', Filters\TextFilterType::class, ['condition_pattern' => FilterOperands::STRING_CONTAINS])
     <?php elseif (null !== $typeOptions['type'] && !isset($typeOptions['options_code'])): ?>
         ->add('<?= $form_field ?>', Filters\<?= $typeOptions['type'] ?>::class])
     <?php else: ?>
