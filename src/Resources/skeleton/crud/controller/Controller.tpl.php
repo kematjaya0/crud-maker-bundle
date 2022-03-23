@@ -13,7 +13,6 @@ use <?= $filter_full_class_name ?>;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Kematjaya\Breadcrumb\Lib\Builder as BreacrumbBuilder;
 <?php if (isset($filter_full_class_name)): ?>
 use Kematjaya\BaseControllerBundle\Controller\BaseLexikFilterController as BaseController;
 <?php else:?>
@@ -30,16 +29,15 @@ use Kematjaya\BaseControllerBundle\Controller\BasePaginationController as BaseCo
 class <?= $class_name ?> extends BaseController<?= "\n" ?>
 {
 <?php if ($use_attributes) { ?>
-    #[Route('/', name: 'index', methods: ['GET', 'POST'])]
+    #[Route('/', name: 'index', methods={"GET", "POST"})]
 <?php } else { ?>
     /**
      * @Route("/", name="index", methods={"GET", "POST"})
      */
 <?php } ?>
 <?php if (isset($repository_full_class_name)): ?>
-    public function index(Request $request, BreacrumbBuilder $builder, <?= $repository_class_name ?> $<?= $repository_var ?>): Response
+    public function index(Request $request, <?= $repository_class_name ?> $<?= $repository_var ?>): Response
     {
-        $builder->add('<?= $route_name ?>');
         <?php if (isset($filter_class_name)): ?>
         $form = $this->createFormFilter(<?= $filter_class_name ?>::class);
         $queryBuilder = $this->buildFilter($request, $form, $<?= $repository_var ?>->createQueryBuilder('this'));
@@ -55,9 +53,8 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         ]);
     }
 <?php else: ?>
-    public function index(BreacrumbBuilder $builder): Response
+    public function index(): Response
     {
-        $builder->add('<?= $route_name ?>');
         $repo = $this->getDoctrine()
             ->getRepository(<?= $entity_class_name ?>::class);
         <?php if (isset($filter_class_name)): ?>
@@ -77,7 +74,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
 <?php endif ?>
 
 <?php if ($use_attributes) { ?>
-    #[Route('/create', name: 'create', methods: ['GET', 'POST'])]
+    #[Route('/create', name: 'create', methods={"GET","POST"})]
 <?php } else { ?>
     /**
      * @Route("/create", name="create", methods={"GET","POST"})
@@ -87,13 +84,10 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     public function create(Request $request): Response
     {
     <?php else:?>
-    public function create(Request $request, BreacrumbBuilder $builder): Response
+    public function create(Request $request): Response
     {
-        $builder->add('<?= $route_name ?>', '<?= $route_name ?>_index');
-        $builder->add('create');
     <?php endif ?>
         $<?= $entity_var_singular ?> = new <?= $entity_class_name ?>();
-        
         <?php if ($is_modal):?>
         $form = $this->createForm(<?= $form_class_name ?>::class, $<?= $entity_var_singular ?>, [
             'attr' => ['id' => 'ajaxForm', 'action' => $this->generateUrl('<?= $route_name ?>_create')]
@@ -117,21 +111,18 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     }
 
 <?php if ($use_attributes) { ?>
-    #[Route('/{<?= $entity_identifier ?>}/show', name: 'show', methods: ['GET'])]
+    #[Route('/{<?= $entity_identifier ?>}/show', name: 'show', methods={"GET"})]
 <?php } else { ?>
     /**
      * @Route("/{<?= $entity_identifier ?>}/show", name="show", methods={"GET"})
      */
 <?php } ?>
     <?php if ($is_modal):?>
-    public function show( <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
+    public function show(<?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
     <?php else:?>
-    public function show(BreacrumbBuilder $builder, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
+    public function show(<?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
-        $builder->add('<?= $route_name ?>', '<?= $route_name ?>_index');
-        $builder->add('show');
-        $builder->add((string) $<?= $entity_var_singular ?>);
     <?php endif ?>
         return $this->render('<?= $templates_path ?>/show.html.twig', [
             '<?= $entity_twig_var_singular ?>' => $<?= $entity_var_singular ?>,
@@ -139,7 +130,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     }
 
 <?php if ($use_attributes) { ?>
-    #[Route('/{<?= $entity_identifier ?>}/edit', name: 'edit', methods: ['GET', 'POST'])]
+    #[Route('/{<?= $entity_identifier ?>}/edit', name: 'edit', methods={"GET","POST"})]
 <?php } else { ?>
     /**
      * @Route("/{<?= $entity_identifier ?>}/edit", name="edit", methods={"GET","POST"})
@@ -149,11 +140,8 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     public function edit(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
     <?php else:?>
-    public function edit(Request $request, BreacrumbBuilder $builder, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
+    public function edit(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
-        $builder->add('<?= $route_name ?>', '<?= $route_name ?>_index');
-        $builder->add('edit');
-        $builder->add((string) $<?= $entity_var_singular ?>);
     <?php endif ?>
         <?php if ($is_modal):?>
         $form = $this->createForm(<?= $form_class_name ?>::class, $<?= $entity_var_singular ?>, [
@@ -170,7 +158,6 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
             return $this->redirectToRoute('<?= $route_name ?>_index');
         }
         <?php endif ?> 
-        
         return $this->render('<?= $templates_path ?>/form.html.twig', [
             '<?= $entity_twig_var_singular ?>' => $<?= $entity_var_singular ?>,
             'form' => $form->createView(), 'title' => 'edit'
@@ -178,10 +165,10 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     }
 
 <?php if ($use_attributes) { ?>
-    #[Route('/{<?= $entity_identifier ?>}/delete', name: 'delete', methods: ['DELETE'])]
+    #[Route('/{<?= $entity_identifier ?>}/delete', name: 'delete', methods: {"DELETE","POST"})]
 <?php } else { ?>
     /**
-     * @Route("/{<?= $entity_identifier ?>}/delete", name="delete", methods={"DELETE"})
+     * @Route("/{<?= $entity_identifier ?>}/delete", name="delete", methods={"DELETE","POST"})
      */
 <?php } ?>
     public function delete(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response

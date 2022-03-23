@@ -6,7 +6,6 @@
 
 namespace Kematjaya\CrudMakerBundle\Maker;
 
-use Kematjaya\Breadcrumb\KmjBreadcrumbBundle;
 use Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer;
 use Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
@@ -105,7 +104,7 @@ final class CRUDMaker extends AbstractMaker
         
         if (null === $input->getArgument('theme')) {
             $argument = $command->getDefinition()->getArgument('theme');
-            $question = new Question($argument->getDescription(), "bootstrap-3");
+            $question = new Question($argument->getDescription(), "bootstrap-4");
             $value = $io->askQuestion($question);
             $input->setArgument('theme', $value);
         }
@@ -132,11 +131,6 @@ final class CRUDMaker extends AbstractMaker
             'router'
         );
         
-        $dependencies->addClassDependency(
-            KmjBreadcrumbBundle::class,
-            'breadcrumb-bundle'
-        );
-
         $dependencies->addClassDependency(
             AbstractType::class,
             'form'

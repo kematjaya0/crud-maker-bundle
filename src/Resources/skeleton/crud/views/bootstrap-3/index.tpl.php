@@ -31,10 +31,12 @@
                 <?php endif ?>
             {% for <?= $entity_twig_var_singular ?> in <?= $entity_twig_var_plural ?> %}
                 <tr>
+                <?php $count = 0 ?>
                 <?php foreach ($entity_fields as $k => $field): ?>
                     <?php if (in_array($k, $fields_skip)):?>
                         <?php continue; ?>
                     <?php endif ?>
+                    <?php $count++ ?>
                     <td>{{ <?= $helper->getEntityFieldPrintCode($entity_twig_var_singular, $field) ?> }}</td>
                 <?php endforeach; ?>
                     <td>
@@ -50,7 +52,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="<?= (count($entity_fields) + 1) ?>">{{ 'no_records_found'|trans }}</td>
+                    <td colspan="<?= $count ?>">{{ 'no_records_found'|trans }}</td>
                 </tr>
             {% endfor %}
             </tbody>

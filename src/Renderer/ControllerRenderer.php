@@ -102,7 +102,6 @@ class ControllerRenderer extends AbstractRenderer
         $additionalNameSpaceLower = "-" !== $additionalNameSpace ? implode(DIRECTORY_SEPARATOR, array_filter(explode("\\", strtolower($additionalNameSpace)))) : null;
         $routeName = Str::asRouteName($controllerClassDetails->getRelativeNameWithoutSuffix());
         $templatesPath = null !== $additionalNameSpaceLower ? $additionalNameSpaceLower . DIRECTORY_SEPARATOR . Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix()) : Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix());
-        
         $filterClassNameDetails = null;
         $filterName = 'filter';
         if ($includeFilter) {
