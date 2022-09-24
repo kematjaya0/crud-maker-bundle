@@ -29,10 +29,10 @@ use Kematjaya\BaseControllerBundle\Controller\BasePaginationController as BaseCo
 class <?= $class_name ?> extends BaseController<?= "\n" ?>
 {
 <?php if ($use_attributes) { ?>
-    #[Route('/', name: 'index', methods={"GET", "POST"})]
+    #[Route('.html', name: 'index', methods={"GET", "POST"})]
 <?php } else { ?>
     /**
-     * @Route("/", name="index", methods={"GET", "POST"})
+     * @Route(".html", name="index", methods={"GET", "POST"})
      */
 <?php } ?>
 <?php if (isset($repository_full_class_name)): ?>
@@ -74,10 +74,10 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
 <?php endif ?>
 
 <?php if ($use_attributes) { ?>
-    #[Route('/create', name: 'create', methods={"GET","POST"})]
+    #[Route('/create.html', name: 'create', methods={"GET","POST"})]
 <?php } else { ?>
     /**
-     * @Route("/create", name="create", methods={"GET","POST"})
+     * @Route("/create.html", name="create", methods={"GET","POST"})
      */
 <?php } ?>
     <?php if ($is_modal):?>
@@ -111,10 +111,10 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     }
 
 <?php if ($use_attributes) { ?>
-    #[Route('/{<?= $entity_identifier ?>}/show', name: 'show', methods={"GET"})]
+    #[Route('/{<?= $entity_identifier ?>}/show.html', name: 'show', methods={"GET"})]
 <?php } else { ?>
     /**
-     * @Route("/{<?= $entity_identifier ?>}/show", name="show", methods={"GET"})
+     * @Route("/{<?= $entity_identifier ?>}/show.html", name="show", methods={"GET"})
      */
 <?php } ?>
     <?php if ($is_modal):?>
@@ -130,10 +130,10 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     }
 
 <?php if ($use_attributes) { ?>
-    #[Route('/{<?= $entity_identifier ?>}/edit', name: 'edit', methods={"GET","POST"})]
+    #[Route('/{<?= $entity_identifier ?>}/edit.html', name: 'edit', methods={"GET","POST"})]
 <?php } else { ?>
     /**
-     * @Route("/{<?= $entity_identifier ?>}/edit", name="edit", methods={"GET","POST"})
+     * @Route("/{<?= $entity_identifier ?>}/edit.html", name="edit", methods={"GET","POST"})
      */
 <?php } ?>
     <?php if ($is_modal):?>
@@ -165,10 +165,10 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     }
 
 <?php if ($use_attributes) { ?>
-    #[Route('/{<?= $entity_identifier ?>}/delete', name: 'delete', methods: {"DELETE","POST"})]
+    #[Route('/{<?= $entity_identifier ?>}/delete.html', name: 'delete', methods: {"DELETE","POST"})]
 <?php } else { ?>
     /**
-     * @Route("/{<?= $entity_identifier ?>}/delete", name="delete", methods={"DELETE","POST"})
+     * @Route("/{<?= $entity_identifier ?>}/delete.html", name="delete", methods={"DELETE","POST"})
      */
 <?php } ?>
     public function delete(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response

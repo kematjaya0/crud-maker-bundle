@@ -19,7 +19,7 @@
         "symfony/http-foundation": "^4.0|^5.0",
         "symfony/translation": "^4.0|^5.0",
         "symfony/yaml": "^4.0|^5.0",
-        "doctrine/orm": "^2.7",
+        "doctrine/orm": "^2.7|^3.0",
         "symfony/maker-bundle": "^1.28",
         "lexik/form-filter-bundle": "^6.0|^7.0",
         "symfony/twig-bundle": "^4.0|^5.0",
