@@ -10,10 +10,6 @@ use <?= $className ?>;
 <?php endforeach; ?>
 use Kematjaya\BaseControllerBundle\Filter\AbstractFilterType;
 
-/**
- * Description of <?= $namespace ?>\<?= $class_name ?>
- *
- */
 class <?= $class_name ?> extends AbstractFilterType
 {
 

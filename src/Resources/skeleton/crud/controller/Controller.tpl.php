@@ -14,35 +14,23 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 <?php if (isset($filter_full_class_name)): ?>
-use Kematjaya\BaseControllerBundle\Controller\BaseLexikFilterController as BaseController;
+use Kematjaya\BaseControllerBundle\Controller\FilterBuilderController as BaseController;
 <?php else:?>
 use Kematjaya\BaseControllerBundle\Controller\BasePaginationController as BaseController;
 <?php endif ?>
 
-<?php if ($use_attributes) { ?>
-#[Route('<?= $route_path ?>')]
-<?php } else { ?>
-/**
- * @Route("<?= $route_path ?>", name="<?= $route_name ?>_")
- */
-<?php } ?>
+#[Route('<?= $route_path ?>', name="<?= $route_name ?>_")]
 class <?= $class_name ?> extends BaseController<?= "\n" ?>
 {
-<?php if ($use_attributes) { ?>
     #[Route('.html', name: 'index', methods={"GET", "POST"})]
-<?php } else { ?>
-    /**
-     * @Route(".html", name="index", methods={"GET", "POST"})
-     */
-<?php } ?>
 <?php if (isset($repository_full_class_name)): ?>
     public function index(Request $request, <?= $repository_class_name ?> $<?= $repository_var ?>): Response
     {
         <?php if (isset($filter_class_name)): ?>
         $form = $this->createFormFilter(<?= $filter_class_name ?>::class);
-        $queryBuilder = $this->buildFilter($request, $form, $<?= $repository_var ?>->createQueryBuilder('this'));
+        $queryBuilder = $this->buildFilter($request, $form, $<?= $repository_var ?>->createQueryBuilder('t'));
         <?php else:?>
-        $queryBuilder = $<?= $repository_var ?>->createQueryBuilder('this');
+        $queryBuilder = $<?= $repository_var ?>->createQueryBuilder('t');
         <?php endif ?>
         
         return $this->render('<?= $templates_path ?>/index.html.twig', [
@@ -59,9 +47,9 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
             ->getRepository(<?= $entity_class_name ?>::class);
         <?php if (isset($filter_class_name)): ?>
         $form = $this->createFormFilter(<?= $filter_class_name ?>::class);
-        $queryBuilder = $this->buildFilter($request, $form, $repo->createQueryBuilder('this'));
+        $queryBuilder = $this->buildFilter($request, $form, $repo->createQueryBuilder('t'));
         <?php else:?>
-        $queryBuilder = $repo->createQueryBuilder('this');
+        $queryBuilder = $repo->createQueryBuilder('t');
         <?php endif ?>
         
         return $this->render('<?= $templates_path ?>/index.html.twig', [
@@ -73,13 +61,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
     }
 <?php endif ?>
 
-<?php if ($use_attributes) { ?>
     #[Route('/create.html', name: 'create', methods={"GET","POST"})]
-<?php } else { ?>
-    /**
-     * @Route("/create.html", name="create", methods={"GET","POST"})
-     */
-<?php } ?>
     <?php if ($is_modal):?>
     public function create(Request $request): Response
     {
@@ -110,13 +92,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         ]);
     }
 
-<?php if ($use_attributes) { ?>
     #[Route('/{<?= $entity_identifier ?>}/show.html', name: 'show', methods={"GET"})]
-<?php } else { ?>
-    /**
-     * @Route("/{<?= $entity_identifier ?>}/show.html", name="show", methods={"GET"})
-     */
-<?php } ?>
     <?php if ($is_modal):?>
     public function show(<?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
@@ -129,13 +105,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         ]);
     }
 
-<?php if ($use_attributes) { ?>
     #[Route('/{<?= $entity_identifier ?>}/edit.html', name: 'edit', methods={"GET","POST"})]
-<?php } else { ?>
-    /**
-     * @Route("/{<?= $entity_identifier ?>}/edit.html", name="edit", methods={"GET","POST"})
-     */
-<?php } ?>
     <?php if ($is_modal):?>
     public function edit(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
@@ -164,13 +134,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         ]);
     }
 
-<?php if ($use_attributes) { ?>
     #[Route('/{<?= $entity_identifier ?>}/delete.html', name: 'delete', methods: {"DELETE","POST"})]
-<?php } else { ?>
-    /**
-     * @Route("/{<?= $entity_identifier ?>}/delete.html", name="delete", methods={"DELETE","POST"})
-     */
-<?php } ?>
     public function delete(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
         $tokenName = 'delete'.$<?= $entity_var_singular ?>->get<?= ucfirst($entity_identifier) ?>();
