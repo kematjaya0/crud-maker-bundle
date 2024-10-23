@@ -15,7 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
  */
 class AppKernelTest extends Kernel
 {
-    public function registerBundles()
+    public function registerBundles():array
     {
         return [
             new TwigBundle(),

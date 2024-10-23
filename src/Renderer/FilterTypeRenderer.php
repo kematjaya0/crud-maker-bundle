@@ -1,9 +1,5 @@
 <?php
 
-/**
- * This file is part of the symfony.
- */
-
 namespace Kematjaya\CrudMakerBundle\Renderer;
 
 use Symfony\Bundle\MakerBundle\Generator;

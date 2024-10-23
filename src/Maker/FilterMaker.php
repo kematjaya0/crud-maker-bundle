@@ -1,9 +1,5 @@
 <?php
 
-/**
- * This file is part of the symfony.
- */
-
 namespace Kematjaya\CrudMakerBundle\Maker;
 
 use Kematjaya\CrudMakerBundle\Renderer\FilterTypeRenderer;
@@ -40,7 +36,7 @@ final class FilterMaker extends AbstractMaker
     public function configureCommand(Command $command, InputConfiguration $inputConfig) 
     {
         $command
-            ->setDescription('Creates a new form filter class by lexik form filter bundle')
+            ->setDescription('Creates a new form filter class by SpiriitLabs form filter bundle')
             ->addArgument('name', InputArgument::OPTIONAL, sprintf('The name of the filter class (e.g. <fg=yellow>%sFilterType</>)', Str::asClassName(Str::getRandomTerm())))
             ->addArgument('bound-class', InputArgument::OPTIONAL, 'The name of Entity or fully qualified model class name that the new form will be bound to (empty for none)')
         ;
@@ -112,7 +108,7 @@ final class FilterMaker extends AbstractMaker
 
         $io->text([
             'Next: Add fields to your filter and start using it.',
-            'Find the documentation at <fg=yellow>https://github.com/lexik/LexikFormFilterBundle</>',
+            'Find the documentation at <fg=yellow>https://github.com/SpiriitLabs/form-filter-bundle</>',
         ]);
     }
 
@@ -127,6 +123,6 @@ final class FilterMaker extends AbstractMaker
      */
     public static function getCommandDescription()
     {
-        return 'generator for lexik filter class';
+        return 'generator for filter class from SpiriitLabs';
     }
 }

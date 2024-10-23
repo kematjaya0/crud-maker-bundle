@@ -1,9 +1,5 @@
 <?php
 
-/**
- * This file is part of the symfony.
- */
-
 namespace Kematjaya\CrudMakerBundle\Maker;
 
 use Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer;
@@ -26,7 +22,6 @@ use Symfony\Component\Validator\Validation;
 use Symfony\Bundle\TwigBundle\TwigBundle;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 
 
 /**
@@ -155,11 +150,6 @@ final class CRUDMaker extends AbstractMaker
             CsrfTokenManager::class,
             'security-csrf'
         );
-
-        $dependencies->addClassDependency(
-            ParamConverter::class,
-            'annotations'
-        );
     }
 
     public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) 
@@ -194,7 +184,7 @@ final class CRUDMaker extends AbstractMaker
      * 
      * @return string
      */
-    public static function getCommandDescription()
+    public static function getCommandDescription():string
     {
         return 'generator for crud with bootstrap';
     }

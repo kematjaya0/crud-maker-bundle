@@ -1,11 +1,5 @@
 <?php
 
-/**
- * Description of KmjUserExtension
- *
- * @author Nur Hidayatullah <kematjaya0@gmail.com>
- */
-
 namespace Kematjaya\CrudMakerBundle\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\Extension\Extension;

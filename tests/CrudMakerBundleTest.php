@@ -1,9 +1,5 @@
 <?php
 
-/**
- * This file is part of the crud-maker-bundle.
- */
-
 namespace Kematjaya\CrudMakerBundle\Tests;
 
 use Kematjaya\CrudMakerBundle\Maker\FilterMaker;
@@ -15,6 +11,7 @@ use Symfony\Component\Console\Formatter\OutputFormatterInterface;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * @package Kematjaya\CrudMakerBundle\Tests
@@ -23,7 +20,7 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class CrudMakerBundleTest extends WebTestCase
 {
-    public static function getKernelClass() 
+    public static function getKernelClass() :string
     {
         return AppKernelTest::class;
     }
@@ -38,12 +35,13 @@ class CrudMakerBundleTest extends WebTestCase
     }
     
     /**
-     * @depends testInstanceClass
      * @param ContainerInterface $container
      * @return FilterMaker
      */
-    public function testInstanceMakerFilter(ContainerInterface $container):FilterMaker
+    public function testInstanceMakerFilter():FilterMaker
     {
+        static::bootKernel([]);
+        $container = static::$kernel->getContainer();
         $registry = $this->createConfiguredMock(ManagerRegistry::class, [
             'getManagers' => []
         ]);
@@ -56,12 +54,13 @@ class CrudMakerBundleTest extends WebTestCase
     }
     
     /**
-     * @depends testInstanceClass
      * @depends testInstanceMakerFilter
      * @param FilterMaker $maker
      */
-    public function testGenerateFilter(ContainerInterface $container, FilterMaker $maker)
+    public function testGenerateFilter(FilterMaker $maker)
     {
+        static::bootKernel([]);
+        $container = static::$kernel->getContainer();
         $input = $this->createConfiguredMock(InputInterface::class, [
             'getArgument' => 'TestEntity'
         ]);
@@ -71,7 +70,7 @@ class CrudMakerBundleTest extends WebTestCase
         ]);
         $io = new ConsoleStyle($input, $output);
         
-        $fileSystem = new \Symfony\Component\Filesystem\Filesystem();
+        $fileSystem = new Filesystem();
         $basePath = dirname(__DIR__);
         $arr = ['tests', 'Filter', 'TestEntityFilterType.php'];
         $file = $basePath . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $arr);
@@ -79,19 +78,4 @@ class CrudMakerBundleTest extends WebTestCase
         $this->assertTrue($fileSystem->exists($file));
         $fileSystem->remove($file);
     }
-    
-    
-//    public function testInstanceCRUDMaker(ContainerInterface $container):CRUDMaker
-//    {
-//        $registry = $this->createConfiguredMock(ManagerRegistry::class, [
-//            'getManagers' => []
-//        ]);
-//        $entityHelper = new DoctrineHelper('Entity', $registry);
-//        
-//        $maker = new CRUDMaker($container->get('controller_renderer'), $container->get('form_renderer'), $entityHelper);
-//        dump($maker);exit;
-//        $this->assertTrue(true);
-//        
-//        return $maker;
-//    }
 }
