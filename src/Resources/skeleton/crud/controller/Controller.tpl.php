@@ -19,10 +19,10 @@ use Kematjaya\BaseControllerBundle\Controller\FilterBuilderController as BaseCon
 use Kematjaya\BaseControllerBundle\Controller\BasePaginationController as BaseController;
 <?php endif ?>
 
-#[Route('<?= $route_path ?>', name="<?= $route_name ?>_")]
+#[Route('<?= $route_path ?>', name:"<?= $route_name ?>_")]
 class <?= $class_name ?> extends BaseController<?= "\n" ?>
 {
-    #[Route(".html", name: "index", methods=["GET", "POST"])]
+    #[Route(".html", name: "index", methods:["GET", "POST"])]
 <?php if (isset($repository_full_class_name)): ?>
     public function index(Request $request, <?= $repository_class_name ?> $<?= $repository_var ?>): Response
     {
@@ -60,7 +60,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         ]);
     }
 <?php endif ?>
-    #[Route("/create.html", name: "create", methods=["GET", "POST"])]
+    #[Route("/create.html", name: "create", methods:["GET", "POST"])]
     <?php if ($is_modal):?>
     public function create(Request $request): Response
     {
@@ -91,7 +91,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         ]);
     }
 
-    #[Route("/{<?= $entity_identifier ?>}/show.html", name: "show", methods=["GET"])]
+    #[Route("/{<?= $entity_identifier ?>}/show.html", name: "show", methods:["GET"])]
     <?php if ($is_modal):?>
     public function show(<?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
@@ -104,7 +104,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         ]);
     }
 
-    #[Route("/{<?= $entity_identifier ?>}/edit.html", name: "edit", methods=["GET","POST"])]
+    #[Route("/{<?= $entity_identifier ?>}/edit.html", name: "edit", methods:["GET","POST"])]
     <?php if ($is_modal):?>
     public function edit(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
@@ -133,7 +133,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         ]);
     }
 
-    #[Route("/{<?= $entity_identifier ?>}/delete.html", name: "delete", methods=["DELETE","POST"])]
+    #[Route("/{<?= $entity_identifier ?>}/delete.html", name: "delete", methods:["DELETE","POST"])]
     public function delete(Request $request, <?= $entity_class_name ?> $<?= $entity_var_singular ?>): Response
     {
         $tokenName = 'delete'.$<?= $entity_var_singular ?>->get<?= ucfirst($entity_identifier) ?>();
