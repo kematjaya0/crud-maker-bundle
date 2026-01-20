@@ -24,16 +24,12 @@ use Symfony\Bundle\MakerBundle\Util\ClassDetails;
  */
 final class FilterMaker extends AbstractMaker
 {
-    private $entityHelper;
-    private $filterTypeRenderer;
     
-    public function __construct(DoctrineHelper $entityHelper, FilterTypeRenderer $filterTypeRenderer) 
+    public function __construct(private DoctrineHelper $entityHelper, private FilterTypeRenderer $filterTypeRenderer)
     {
-        $this->entityHelper = $entityHelper;
-        $this->filterTypeRenderer = $filterTypeRenderer;
     }
     
-    public function configureCommand(Command $command, InputConfiguration $inputConfig) 
+    public function configureCommand(Command $command, InputConfiguration $inputConfig) :void
     {
         $command
             ->setDescription('Creates a new form filter class by SpiriitLabs form filter bundle')
@@ -49,7 +45,7 @@ final class FilterMaker extends AbstractMaker
         
     }
 
-    public function interact(InputInterface $input, ConsoleStyle $io, Command $command)
+    public function interact(InputInterface $input, ConsoleStyle $io, Command $command):void
     {
         if (null === $input->getArgument('bound-class')) {
             $argument = $command->getDefinition()->getArgument('bound-class');
@@ -65,7 +61,7 @@ final class FilterMaker extends AbstractMaker
         }
     }
     
-    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) 
+    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) :void
     {
         $formClassNameDetails = $generator->createClassNameDetails(
             $input->getArgument('name'),

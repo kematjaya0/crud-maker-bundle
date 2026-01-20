@@ -1,9 +1,5 @@
 <?php
 
-/**
- * This file is part of the symfony.
- */
-
 namespace Kematjaya\CrudMakerBundle\Renderer;
 
 use Kematjaya\CrudMakerBundle\Renderer\FilterTypeRenderer;
@@ -24,25 +20,10 @@ use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
  */
 class ControllerRenderer extends AbstractRenderer
 {
-    
-    /**
-     * 
-     * @var DoctrineHelper
-     */
-    private $doctrineHelper;
-    
-    /**
-     * 
-     * @var FilterTypeRenderer
-     */
-    private $filterTypeRenderer;
-    
     private $inflector;
     
-    public function __construct(ContainerBagInterface $bag, DoctrineHelper $doctrineHelper, FilterTypeRenderer $filterTypeRenderer) 
+    public function __construct(ContainerBagInterface $bag, private DoctrineHelper $doctrineHelper, private FilterTypeRenderer $filterTypeRenderer)
     {
-        $this->filterTypeRenderer = $filterTypeRenderer;
-        $this->doctrineHelper = $doctrineHelper;
         
         if (class_exists(InflectorFactory::class)) {
             $this->inflector = InflectorFactory::create()->build();

@@ -9,7 +9,7 @@
         <tbody>
             <?php foreach ($entity_fields as $field): ?>
             <tr>
-                <th width="30%"><?= ucfirst($field['fieldName']) ?></th>
+                <th style="width:30%">{{ '<?= $field['fieldName'] ?>'|trans }}</th>
                 <td>{{ <?= $helper->getEntityFieldPrintCode($entity_twig_var_singular, $field) ?> }}</td>
             </tr>
             <?php endforeach; ?>
@@ -29,7 +29,7 @@
         <tbody>
             <?php foreach ($entity_fields as $field): ?>
             <tr>
-                <th width="30%"><?= ucfirst($field['fieldName']) ?></th>
+                <th style="width:30%">{{ '<?= $field['fieldName'] ?>'|trans }}</th>
                 <td>{{ <?= $helper->getEntityFieldPrintCode($entity_twig_var_singular, $field) ?> }}</td>
             </tr>
             <?php endforeach; ?>

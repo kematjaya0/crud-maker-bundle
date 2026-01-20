@@ -3,6 +3,7 @@
 namespace Kematjaya\CrudMakerBundle\Tests;
 
 use Kematjaya\CrudMakerBundle\Maker\FilterMaker;
+use PHPUnit\Framework\Attributes\Depends;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Input\InputInterface;
@@ -30,14 +31,10 @@ class CrudMakerBundleTest extends WebTestCase
         $client = parent::createClient();
         $container = $client->getContainer();
         $this->assertInstanceOf(ContainerInterface::class, $container);
-        
+
         return $container;
     }
-    
-    /**
-     * @param ContainerInterface $container
-     * @return FilterMaker
-     */
+
     public function testInstanceMakerFilter():FilterMaker
     {
         static::bootKernel([]);
@@ -49,14 +46,11 @@ class CrudMakerBundleTest extends WebTestCase
         
         $maker = new FilterMaker($entityHelper, $container->get('filter_type_renderer'));
         $this->assertTrue(true);
-        
+
         return $maker;
     }
-    
-    /**
-     * @depends testInstanceMakerFilter
-     * @param FilterMaker $maker
-     */
+
+    #[Depends("testInstanceMakerFilter")]
     public function testGenerateFilter(FilterMaker $maker)
     {
         static::bootKernel([]);
@@ -77,5 +71,27 @@ class CrudMakerBundleTest extends WebTestCase
         $maker->generate($input, $io, $container->get('generator'));
         $this->assertTrue($fileSystem->exists($file));
         $fileSystem->remove($file);
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        $this->restoreExceptionHandler();
+    }
+
+    protected function restoreExceptionHandler(): void
+    {
+        while (true) {
+            $previousHandler = set_exception_handler(static fn() => null);
+
+            restore_exception_handler();
+
+            if ($previousHandler === null) {
+                break;
+            }
+
+            restore_exception_handler();
+        }
     }
 }

@@ -1,9 +1,5 @@
 <?php
 
-/**
- * This file is part of the crud-maker-bundle.
- */
-
 namespace Kematjaya\CrudMakerBundle\Renderer;
 
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;

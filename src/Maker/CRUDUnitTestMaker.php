@@ -1,9 +1,5 @@
 <?php
 
-/**
- * This file is part of the symfony.
- */
-
 namespace Kematjaya\CrudMakerBundle\Maker;
 
 use Symfony\Component\Console\Input\InputInterface;
@@ -29,15 +25,9 @@ use Symfony\Bundle\MakerBundle\Validator;
  */
 final class CRUDUnitTestMaker extends AbstractMaker
 {
-    /**
-     * 
-     * @var DoctrineHelper
-     */
-    private $doctrineHelper;
     
-    public function __construct(DoctrineHelper $doctrineHelper) 
+    public function __construct(private DoctrineHelper $doctrineHelper)
     {
-        $this->doctrineHelper = $doctrineHelper;
     }
     
     public static function getCommandName(): string
@@ -45,7 +35,7 @@ final class CRUDUnitTestMaker extends AbstractMaker
         return 'make:kmj-functional-test';
     }
     
-    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) 
+    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) :void
     {
         $entityClassDetails = $generator->createClassNameDetails(
             Validator::entityExists($input->getArgument('entity-class'), $this->doctrineHelper->getEntitiesForAutocomplete()),
@@ -85,7 +75,7 @@ final class CRUDUnitTestMaker extends AbstractMaker
         ]);
     }
     
-    public function configureCommand(Command $command, InputConfiguration $inputConfig)
+    public function configureCommand(Command $command, InputConfiguration $inputConfig):void
     {
         $command
             ->setDescription('Creates a new unit test class for CRUD controller')
@@ -99,7 +89,7 @@ final class CRUDUnitTestMaker extends AbstractMaker
         $inputConfig->setArgumentAsNonInteractive('modal-form');
     }
     
-    public function interact(InputInterface $input, ConsoleStyle $io, Command $command)
+    public function interact(InputInterface $input, ConsoleStyle $io, Command $command):void
     {
         if (null === $input->getArgument('entity-class')) {
             $argument = $command->getDefinition()->getArgument('entity-class');
@@ -129,7 +119,7 @@ final class CRUDUnitTestMaker extends AbstractMaker
         }
     }
     
-    public function configureDependencies(DependencyBuilder $dependencies) 
+    public function configureDependencies(DependencyBuilder $dependencies) :void
     {
         $dependencies->addClassDependency(
             Route::class,

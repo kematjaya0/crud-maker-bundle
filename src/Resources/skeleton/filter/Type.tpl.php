@@ -13,7 +13,7 @@ use Kematjaya\BaseControllerBundle\Filter\AbstractFilterType;
 class <?= $class_name ?> extends AbstractFilterType
 {
 
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options):void
     {
         $builder
 <?php foreach ($form_fields as $form_field => $typeOptions): ?>

@@ -32,33 +32,11 @@ use Symfony\Component\Security\Csrf\CsrfTokenManager;
 final class CRUDMaker extends AbstractMaker
 {
     
-    /**
-     * 
-     * @var ControllerRenderer
-     */
-    private $controllerRenderer;
-    
-    
-    /**
-     * 
-     * @var DoctrineHelper
-     */
-    private $doctrineHelper;
-    
-    /**
-     * 
-     * @var FormTypeRenderer
-     */
-    private $formTypeRenderer;
-    
-    public function __construct(ControllerRenderer $controllerRenderer, FormTypeRenderer $formTypeRenderer, DoctrineHelper $doctrineHelper) 
+    public function __construct(private ControllerRenderer $controllerRenderer, private FormTypeRenderer $formTypeRenderer, private DoctrineHelper $doctrineHelper)
     {
-        $this->controllerRenderer = $controllerRenderer;
-        $this->formTypeRenderer = $formTypeRenderer;
-        $this->doctrineHelper = $doctrineHelper;
     }
     
-    public function configureCommand(Command $command, InputConfiguration $inputConfig) 
+    public function configureCommand(Command $command, InputConfiguration $inputConfig) :void
     {
         $command
             ->setDescription('Creates CRUD for Doctrine entity class provide by kematjaya/crud-maker-bundle')
@@ -76,7 +54,7 @@ final class CRUDMaker extends AbstractMaker
         $inputConfig->setArgumentAsNonInteractive('theme');
     }
 
-    public function interact(InputInterface $input, ConsoleStyle $io, Command $command)
+    public function interact(InputInterface $input, ConsoleStyle $io, Command $command):void
     {
         if (null === $input->getArgument('entity-class')) {
             $argument = $command->getDefinition()->getArgument('entity-class');
@@ -119,7 +97,7 @@ final class CRUDMaker extends AbstractMaker
         }
     }
     
-    public function configureDependencies(DependencyBuilder $dependencies) 
+    public function configureDependencies(DependencyBuilder $dependencies) :void
     {
         $dependencies->addClassDependency(
             Route::class,
@@ -152,7 +130,7 @@ final class CRUDMaker extends AbstractMaker
         );
     }
 
-    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) 
+    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) :void
     {
         $entityClassDetails = $generator->createClassNameDetails(
             Validator::entityExists($input->getArgument('entity-class'), $this->doctrineHelper->getEntitiesForAutocomplete()),
