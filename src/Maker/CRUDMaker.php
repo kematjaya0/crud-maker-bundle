@@ -77,7 +77,7 @@ final class CRUDMaker extends AbstractMaker
         
         if (null === $input->getArgument('theme')) {
             $argument = $command->getDefinition()->getArgument('theme');
-            $question = new Question($argument->getDescription(), "bootstrap-4");
+            $question = new Question($argument->getDescription(), "bootstrap-5");
             $value = $io->askQuestion($question);
             $input->setArgument('theme', $value);
         }
