@@ -1,4 +1,4 @@
-<?= $helper->getHeadPrintCode(strtolower($entity_class_name)); ?>
+{% extends 'base.html.twig' %}
 
 {% block title %}{{ '<?= strtolower($entity_class_name) ?>'|trans }}{% endblock %}
 
