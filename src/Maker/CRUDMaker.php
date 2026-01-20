@@ -16,7 +16,7 @@ use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Route;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Validator\Validation;
 use Symfony\Bundle\TwigBundle\TwigBundle;
