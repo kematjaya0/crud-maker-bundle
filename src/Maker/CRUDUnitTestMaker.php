@@ -12,7 +12,7 @@ use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
 use Symfony\Bundle\MakerBundle\DependencyBuilder;
 use Symfony\Bundle\MakerBundle\Generator;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\BrowserKit\History;
 use Symfony\Component\CssSelector\CssSelectorConverter;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
@@ -108,14 +108,14 @@ final class CRUDUnitTestMaker extends AbstractMaker
             $argument = $command->getDefinition()->getArgument('include-filter');
             $question = new Question($argument->getDescription(), 'no');
             $value = $io->askQuestion($question);
-            $input->setArgument('include-filter', 'y' == strtolower($value) or 'yes' == strtolower($value) ? true: false);
+            $input->setArgument('include-filter', 'y' === strtolower($value) || 'yes' === strtolower($value));
         }
         
         if (null === $input->getArgument('modal-form')) {
             $argument = $command->getDefinition()->getArgument('modal-form');
             $question = new Question($argument->getDescription(), 'no');
             $value = $io->askQuestion($question);
-            $input->setArgument('modal-form', 'y' == strtolower($value) or 'yes' == strtolower($value) ? true: false);
+            $input->setArgument('modal-form', 'y' === strtolower($value) || 'yes' === strtolower($value));
         }
     }
     

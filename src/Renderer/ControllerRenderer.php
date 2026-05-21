@@ -20,7 +20,7 @@ use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
  */
 class ControllerRenderer extends AbstractRenderer
 {
-    private $inflector;
+    private ?\Doctrine\Inflector\Inflector $inflector = null;
     
     public function __construct(ContainerBagInterface $bag, private DoctrineHelper $doctrineHelper, private FilterTypeRenderer $filterTypeRenderer)
     {
@@ -178,7 +178,7 @@ class ControllerRenderer extends AbstractRenderer
                 $formFields = $entityDoctrineDetails->getFormFields();
                 $identifierField = $entityDoctrineDetails->getIdentifier();
             } else {
-                $classDetails = new ClassDetails($entityDoctrineDetails->getFullName());
+                $classDetails = new ClassDetails($entityClassDetails->getFullName());
                 $formFields = $classDetails->getFormFields();
             }
 
@@ -201,6 +201,7 @@ class ControllerRenderer extends AbstractRenderer
             return $this->inflector->pluralize($word);
         }
 
+        /** @phpstan-ignore method.staticCall */
         return LegacyInflector::pluralize($word);
     }
 
@@ -210,6 +211,7 @@ class ControllerRenderer extends AbstractRenderer
             return $this->inflector->singularize($word);
         }
 
+        /** @phpstan-ignore method.staticCall */
         return LegacyInflector::singularize($word);
     }
 }

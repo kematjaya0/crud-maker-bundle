@@ -11,11 +11,8 @@ use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
  */
 abstract class AbstractRenderer 
 {
-    /**
-     * 
-     * @var array
-     */
-    protected $basePath = [];
+    /** @var array<int, string> */
+    protected array $basePath = [];
     
     public function __construct(ContainerBagInterface $bag) 
     {
@@ -24,6 +21,9 @@ abstract class AbstractRenderer
         $this->basePath = array_merge($path, [dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'skeleton']);
     }
     
+    /**
+     * @return array<int, string>
+     */
     public function getBasePath():array
     {
         return $this->basePath;

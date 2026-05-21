@@ -3,7 +3,6 @@
 namespace Kematjaya\CrudMakerBundle\Maker;
 
 use Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer;
-use Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
 use Symfony\Bundle\MakerBundle\InputConfiguration;
 use Symfony\Bundle\MakerBundle\DependencyBuilder;
@@ -32,7 +31,7 @@ use Symfony\Component\Security\Csrf\CsrfTokenManager;
 final class CRUDMaker extends AbstractMaker
 {
     
-    public function __construct(private ControllerRenderer $controllerRenderer, private FormTypeRenderer $formTypeRenderer, private DoctrineHelper $doctrineHelper)
+    public function __construct(private ControllerRenderer $controllerRenderer, private DoctrineHelper $doctrineHelper)
     {
     }
     
@@ -86,14 +85,14 @@ final class CRUDMaker extends AbstractMaker
             $argument = $command->getDefinition()->getArgument('include-filter');
             $question = new Question($argument->getDescription(), 'no');
             $value = $io->askQuestion($question);
-            $input->setArgument('include-filter', 'y' == strtolower($value) or 'yes' == strtolower($value) ? true: false);
+            $input->setArgument('include-filter', 'y' === strtolower($value) || 'yes' === strtolower($value));
         }
         
         if (null === $input->getArgument('modal-form')) {
             $argument = $command->getDefinition()->getArgument('modal-form');
             $question = new Question($argument->getDescription(), 'no');
             $value = $io->askQuestion($question);
-            $input->setArgument('modal-form', 'y' == strtolower($value) or 'yes' == strtolower($value) ? true: false);
+            $input->setArgument('modal-form', 'y' === strtolower($value) || 'yes' === strtolower($value));
         }
     }
     
@@ -167,6 +166,9 @@ final class CRUDMaker extends AbstractMaker
         return 'generator for crud with bootstrap';
     }
     
+    /**
+     * @return array<int, string>
+     */
     protected function getAvailableThemes():array 
     {
         $viewPath = "crud/views";
@@ -177,8 +179,12 @@ final class CRUDMaker extends AbstractMaker
                 continue;
             }
             
-            $themes = array_merge($themes, array_filter(scandir($dir), function (string $name) {
-                return "." !== $name and ".." !== $name;
+            $entries = scandir($dir);
+            if (false === $entries) {
+                continue;
+            }
+            $themes = array_merge($themes, array_filter($entries, function (string $name) {
+                return '.' !== $name && '..' !== $name;
             }));
         }
         

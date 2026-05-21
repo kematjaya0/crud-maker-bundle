@@ -40,7 +40,7 @@ final class FilterMaker extends AbstractMaker
         $inputConfig->setArgumentAsNonInteractive('bound-class');
     }
 
-    public function configureDependencies(DependencyBuilder $dependencies) 
+    public function configureDependencies(DependencyBuilder $dependencies): void
     {
         
     }
@@ -73,6 +73,7 @@ final class FilterMaker extends AbstractMaker
 
         $boundClass = $input->getArgument('bound-class');
         $boundClassDetails = null;
+        $identifierField = null;
         if (null !== $boundClass) {
             $boundClassDetails = $generator->createClassNameDetails(
                 $boundClass,
@@ -117,7 +118,7 @@ final class FilterMaker extends AbstractMaker
      * 
      * @return string
      */
-    public static function getCommandDescription()
+    public static function getCommandDescription(): string
     {
         return 'generator for filter class from SpiriitLabs';
     }

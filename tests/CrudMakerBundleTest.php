@@ -3,6 +3,7 @@
 namespace Kematjaya\CrudMakerBundle\Tests;
 
 use Kematjaya\CrudMakerBundle\Maker\FilterMaker;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Depends;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -19,6 +20,7 @@ use Symfony\Component\Filesystem\Filesystem;
  * @license https://opensource.org/licenses/MIT MIT
  * @author  Nur Hidayatullah <kematjaya0@gmail.com>
  */
+#[AllowMockObjectsWithoutExpectations]
 class CrudMakerBundleTest extends WebTestCase
 {
     public static function getKernelClass() :string

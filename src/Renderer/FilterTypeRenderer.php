@@ -13,7 +13,12 @@ use Symfony\Bundle\MakerBundle\Str;
  */
 final class FilterTypeRenderer extends AbstractRenderer
 {
-    public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ClassNameDetails $boundClassDetails = null, string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = [])
+    /**
+     * @param array<string, mixed> $formFields
+     * @param array<int, string> $extraUseClasses
+     * @param array<int, string> $constraintClasses
+     */
+    public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ?ClassNameDetails $boundClassDetails = null, ?string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = []): void
     {
         $fieldTypeUseStatements = [];
         $fields = [];
@@ -41,7 +46,11 @@ final class FilterTypeRenderer extends AbstractRenderer
         );
     }
     
-    protected function getFieldTypeOptions(array $fieldTypeOptions)
+    /**
+     * @param array<string, mixed> $fieldTypeOptions
+     * @return array<string, mixed>
+     */
+    protected function getFieldTypeOptions(array $fieldTypeOptions): array
     {
         if (!isset($fieldTypeOptions['type'])) {
             return $fieldTypeOptions;
