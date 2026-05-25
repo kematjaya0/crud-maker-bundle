@@ -41,7 +41,7 @@ class <?= $class_name ?> extends BaseController<?= "\n" ?>
         ]);
     }
 <?php else: ?>
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $repo = $this->getDoctrine()
             ->getRepository(<?= $entity_class_name ?>::class);
