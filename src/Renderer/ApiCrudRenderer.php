@@ -64,6 +64,7 @@ class ApiCrudRenderer extends AbstractRenderer
 
         $fields = $this->buildFields($entityDoctrineDetails);
         $timestampField = $this->findTimestampField($entityDoctrineDetails);
+        $timestampFieldClass = $this->timestampFieldClass($entityDoctrineDetails, $timestampField);
         $idType = $this->detectIdType($entityDoctrineDetails);
         $writeMode = $this->detectWriteMode($entityClassDetails->getFullName(), $fields, $ownerProperty);
         $entityVar = lcfirst($this->singularize($entityClassDetails->getShortName()));
@@ -93,6 +94,7 @@ class ApiCrudRenderer extends AbstractRenderer
             'fields' => $fields,
             'searchable_fields' => $searchableFields,
             'timestamp_field' => $timestampField,
+            'timestamp_field_class' => $timestampFieldClass,
             'write_mode' => $writeMode,
             'owner_full_class_name' => $ownerClassDetails?->getFullName(),
             'owner_class_name' => $ownerClassDetails?->getShortName(),
@@ -388,6 +390,26 @@ class ApiCrudRenderer extends AbstractRenderer
         }
 
         return null;
+    }
+
+    /**
+     * PHP class to instantiate for the detected timestamp field (see findTimestampField()) when
+     * a setter-mode entity needs it set at create() time — a constructor-mode entity (Note-style)
+     * already does this itself inside its own constructor, but a setter-mode one (no constructor)
+     * has nothing else to set it, so the generated Service does it explicitly instead.
+     */
+    private function timestampFieldClass(EntityDetails $entityDoctrineDetails, ?string $timestampField): ?string
+    {
+        if (null === $timestampField) {
+            return null;
+        }
+
+        $doctrineType = (string) ($entityDoctrineDetails->getDisplayFields()[$timestampField]['type'] ?? '');
+
+        return match ($doctrineType) {
+            Types::DATETIME_IMMUTABLE, Types::DATETIMETZ_IMMUTABLE => '\\DateTimeImmutable',
+            default => '\\DateTime',
+        };
     }
 
     /**

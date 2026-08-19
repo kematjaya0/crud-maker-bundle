@@ -82,7 +82,7 @@ final readonly class <?= $class_name ?><?= "\n" ?>
                 '<?= $field['name'] ?>' => $e->get<?= ucfirst($field['name']) ?>(),
 <?php endforeach ?>
 <?php if (null !== $timestamp_field): ?>
-                '<?= $timestamp_field ?>' => $e->get<?= ucfirst($timestamp_field) ?>()->format(\DATE_ATOM),
+                '<?= $timestamp_field ?>' => $e->get<?= ucfirst($timestamp_field) ?>()?->format(\DATE_ATOM) ?? '',
 <?php endif ?>
             ], $items),
         ]);

@@ -16,10 +16,10 @@ use <?= $service_interface_full_class_name ?>;
 <?php if (null !== $repository_full_class_name): ?>
 use <?= $repository_full_class_name ?>;
 <?php endif ?>
-<?php if (null !== $owner_class_name || $with_access_control): ?>
+<?php if (null !== $owner_class_name): ?>
 use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 <?php endif ?>
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 <?php if ($with_access_control): ?>
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 <?php endif ?>
@@ -32,7 +32,7 @@ final readonly class <?= $class_name ?> implements ProcessorInterface
 <?php if (null !== $repository_full_class_name): ?>
         private <?= $repository_class_name ?> $<?= $repository_var ?>,
 <?php endif ?>
-<?php if (null !== $owner_class_name || $with_access_control): ?>
+<?php if (null !== $owner_class_name): ?>
         private Security $security,
 <?php endif ?>
 <?php if ($with_access_control): ?>

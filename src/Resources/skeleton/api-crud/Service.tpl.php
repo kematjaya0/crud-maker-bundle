@@ -17,7 +17,17 @@ final readonly class <?= $class_name ?> implements <?= $service_interface_class_
     {
     }
 
-<?php $fieldValue = static fn (array $field): string => ('string' === $field['doctrine_type'] || 'text' === $field['spec_type'] || 'text' === $field['doctrine_type']) ? sprintf('trim($input->%s)', $field['name']) : sprintf('$input->%s', $field['name']); ?>
+<?php $fieldValue = static function (array $field): string {
+    $isStringy = 'string' === $field['doctrine_type'] || 'text' === $field['spec_type'] || 'text' === $field['doctrine_type'];
+    if (!$isStringy) {
+        return sprintf('$input->%s', $field['name']);
+    }
+    if ($field['nullable']) {
+        return sprintf('(null !== $input->%1$s ? trim($input->%1$s) : null)', $field['name']);
+    }
+
+    return sprintf('trim($input->%s)', $field['name']);
+}; ?>
 <?php if ('setter' === $write_mode): ?>
 <?php if (null !== $owner_class_name): ?>
     public function create(<?= $owner_class_name ?> $<?= $owner_var ?>, <?= $input_class_name ?> $input): <?= $entity_class_name ?><?= "\n" ?>
@@ -27,6 +37,9 @@ final readonly class <?= $class_name ?> implements <?= $service_interface_class_
 <?php foreach ($fields as $field): ?>
         $<?= $entity_var ?>->set<?= ucfirst($field['name']) ?>(<?= $fieldValue($field) ?>);
 <?php endforeach ?>
+<?php if (null !== $timestamp_field): ?>
+        $<?= $entity_var ?>->set<?= ucfirst($timestamp_field) ?>(new <?= $timestamp_field_class ?>());
+<?php endif ?>
         $this->entityManager->persist($<?= $entity_var ?>);
         $this->entityManager->flush();
 
@@ -39,6 +52,9 @@ final readonly class <?= $class_name ?> implements <?= $service_interface_class_
 <?php foreach ($fields as $field): ?>
         $<?= $entity_var ?>->set<?= ucfirst($field['name']) ?>(<?= $fieldValue($field) ?>);
 <?php endforeach ?>
+<?php if (null !== $timestamp_field): ?>
+        $<?= $entity_var ?>->set<?= ucfirst($timestamp_field) ?>(new <?= $timestamp_field_class ?>());
+<?php endif ?>
         $this->entityManager->persist($<?= $entity_var ?>);
         $this->entityManager->flush();
 
