@@ -3,3 +3,12 @@
 /var/
 composer.lock
 .idea
+
+# Artifacts left behind if a test crashes before its own cleanup runs
+# (ApiCrudMakerTest / CrudMakerBundleTest generate into these paths).
+/crud-specs/
+/tests/Dto/
+/tests/Service/
+/tests/State/
+/tests/Tests/
+/tests/Filter/

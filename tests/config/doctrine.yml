@@ -1,0 +1,11 @@
+doctrine:
+    dbal:
+        driver: pdo_sqlite
+        memory: true
+    orm:
+        mappings:
+            Tests:
+                is_bundle: false
+                type: attribute
+                dir: '%kernel.project_dir%/tests/Entity'
+                prefix: 'Kematjaya\CrudMakerBundle\Tests\Entity'

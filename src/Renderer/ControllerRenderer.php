@@ -2,11 +2,8 @@
 
 namespace Kematjaya\CrudMakerBundle\Renderer;
 
-use Kematjaya\CrudMakerBundle\Renderer\FilterTypeRenderer;
 use Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
-use Doctrine\Inflector\Inflector as LegacyInflector;
-use Doctrine\Inflector\InflectorFactory;
 use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Str;
@@ -20,15 +17,8 @@ use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
  */
 class ControllerRenderer extends AbstractRenderer
 {
-    private ?\Doctrine\Inflector\Inflector $inflector = null;
-    
     public function __construct(ContainerBagInterface $bag, private DoctrineHelper $doctrineHelper, private FilterTypeRenderer $filterTypeRenderer)
     {
-        
-        if (class_exists(InflectorFactory::class)) {
-            $this->inflector = InflectorFactory::create()->build();
-        }
-        
         parent::__construct($bag);
     }
     
@@ -193,25 +183,5 @@ class ControllerRenderer extends AbstractRenderer
             
         
         return $controllerClassDetails;
-    }
-    
-    private function pluralize(string $word): string
-    {
-        if (null !== $this->inflector) {
-            return $this->inflector->pluralize($word);
-        }
-
-        /** @phpstan-ignore method.staticCall */
-        return LegacyInflector::pluralize($word);
-    }
-
-    private function singularize(string $word): string
-    {
-        if (null !== $this->inflector) {
-            return $this->inflector->singularize($word);
-        }
-
-        /** @phpstan-ignore method.staticCall */
-        return LegacyInflector::singularize($word);
     }
 }

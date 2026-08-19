@@ -6,15 +6,19 @@ services:
 
     Kematjaya\CrudMakerBundle\Renderer\FilterTypeRenderer: ~
     Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer: ~
+    Kematjaya\CrudMakerBundle\Renderer\ApiCrudRenderer: ~
     Kematjaya\CrudMakerBundle\Maker\FilterMaker:
         tags: ['maker.command']
-        
+
     Kematjaya\CrudMakerBundle\Maker\CRUDMaker:
         tags: ['maker.command']
-       
+
     Kematjaya\CrudMakerBundle\Maker\CRUDUnitTestMaker:
         tags: ['maker.command']
-    
+
+    Kematjaya\CrudMakerBundle\Maker\ApiCrudMaker:
+        tags: ['maker.command']
+
     maker.file_link_formatter:
         class: Symfony\Bundle\MakerBundle\Util\MakerFileLinkFormatter
         

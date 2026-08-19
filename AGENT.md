@@ -14,8 +14,12 @@ CRUD generator berbasis Symfony MakerBundle. Generate controller CRUD + filter c
 - `symfony/maker-bundle` ^1.60 (parent framework)
 - `kematjaya/base-controller-bundle` ^8.0
 - `kematjaya/url-bundle` ^7.0|^8.0
+- `api-platform/symfony` — soft dependency (DependencyBuilder check only, not in composer.json
+  require) used by make:kmj-api-crud's generated OUTPUT, not by this bundle itself
 - PHPUnit ^12.0 (dev)
-- No phpstan, no cs-fixer config in repo
+- phpstan level 6 (`composer phpstan`) — `includes: vendor/phpstan/phpstan-doctrine/extension.neon`
+  in phpstan.neon.dist, do not remove or Doctrine-aware types silently go wrong
+- No cs-fixer config in repo
 
 ## Dirs
 
@@ -25,13 +29,19 @@ src/
 │   ├── Configuration.php          # crud_maker config tree
 │   └── CrudMakerExtension.php     # DI extension loader
 ├── Maker/
-│   ├── CRUDMaker.php              # make:kmj-crud
+│   ├── CRUDMaker.php              # make:kmj-crud (Twig/Bootstrap CRUD, needs existing entity)
 │   ├── FilterMaker.php            # make:kmj-filter
-│   └── CRUDUnitTestMaker.php      # make:kmj-functional-test
+│   ├── CRUDUnitTestMaker.php      # make:kmj-functional-test (functional test for CRUDMaker's controller)
+│   └── ApiCrudMaker.php           # make:kmj-api-crud (API Platform CRUD write-side, needs existing
+│                                     entity+#[ApiResource] — see next-steps text it prints)
 ├── Renderer/
-│   ├── AbstractRenderer.php       # base path resolver
-│   ├── ControllerRenderer.php     # generates controller + twig views
-│   └── FilterTypeRenderer.php     # generates filter form class
+│   ├── AbstractRenderer.php       # base path resolver + shared pluralize()/singularize()
+│   ├── ControllerRenderer.php     # generates controller + twig views (for CRUDMaker)
+│   ├── FilterTypeRenderer.php     # generates filter form class
+│   ├── ApiCrudRenderer.php        # generates Input DTO, Service(+Interface), WriteProcessor,
+│   │                                 optional CurrentUser*Extension + unit test, + crud-specs/*.json
+│   │                                 sidecar (for ApiCrudMaker)
+│   └── ApiCrudResult.php          # value object: list<string> $nextSteps printed after generate()
 ├── Resources/
 │   ├── config/services.yaml       # service wiring (maker.command tags)
 │   └── skeleton/                  # template files (.tpl.php)
@@ -41,13 +51,21 @@ src/
 │       │   ├── bootstrap-4/
 │       │   └── bootstrap-5/
 │       ├── filter/
-│       └── test/
+│       ├── test/
+│       └── api-crud/              # Input.tpl.php, ServiceInterface.tpl.php, Service.tpl.php,
+│                                     WriteProcessor.tpl.php, QueryExtension.tpl.php, test/ServiceTest.tpl.php
 └── CrudMakerBundle.php
 tests/
-├── AppKernelTest.php
-├── CrudMakerBundleTest.php
-├── Entity/TestEntity.php
-└── config/ (bundle.yml, config.yml, services_test.yml)
+├── AppKernelTest.php               # registers DoctrineBundle + tests/config/doctrine.yml
+│                                      (pdo_sqlite :memory:, attribute mapping on tests/Entity)
+├── CrudMakerBundleTest.php          # FilterMaker smoke test
+├── ApiCrudMakerTest.php             # ApiCrudMaker end-to-end smoke test (real Doctrine metadata,
+│                                      php -l's every generated file, checks crud-specs/*.json)
+├── Entity/TestEntity.php            # plain (non-mapped) fixture, used by the ClassDetails-reflection
+│                                      fallback path — NOT #[ORM\Entity]
+├── Entity/TestOwner.php, TestArticle.php  # real #[ORM\Entity] fixtures for ApiCrudMakerTest
+├── Repository/TestArticleRepository.php
+└── config/ (bundle.yml, config.yml, doctrine.yml, services_test.yml)
 ```
 
 ## CLI Commands
@@ -57,6 +75,7 @@ tests/
 | `make:kmj-crud` | CRUDMaker | Generate CRUD controller + 7 twig views + form + optional filter |
 | `make:kmj-filter` | FilterMaker | Generate filter form class (SpiriitLabs FormFilterBundle) |
 | `make:kmj-functional-test` | CRUDUnitTestMaker | Generate functional test for CRUD controller |
+| `make:kmj-api-crud` | ApiCrudMaker | Generate API Platform CRUD write-side (Input DTO, Service+Interface, WriteProcessor, optional owner-scoped query extension, optional unit test, `crud-specs/<Entity>.json` sidecar for `@kematjaya/crud-ui-generator`) for an *existing* entity. Args: `entity-class`, `owner-property` (`-` for none), `permission-prefix` (`-` to guess from entity name), `with-access-control` (bool — gates create/edit via `kematjaya/access-control-bundle`'s `isGranted('<prefix>.create')`), `with-tests` (bool). Never edits the entity file — prints the `#[ApiResource(...)]` block to paste in by hand, since safely rewriting an existing hand-authored file's attributes isn't attempted. Assumes the entity's write-side constructor/`update()` method params are in the same order as its Doctrine field mapping order — adjust generated Service manually if not. datetime/date/time fields are skipped from the Input DTO (treated as system-managed) — see `ApiCrudRenderer::SKIPPED_TYPES`. |
 
 ## Bundle Config (`config/packages/crud_generator.yaml`)
 
@@ -91,6 +110,9 @@ Atau `vendor/bin/phpunit -c phpunit.xml.dist`. Boot kernel test `AppKernelTest` 
 5. **Generate test membuat file** — `testGenerateFilter` bikin file `tests/Filter/TestEntityFilterType.php` lalu di-remove. Kalau test crash di tengah → file sisa akan tertinggal.
 6. **Inflector fallback** — `ControllerRenderer` coba `InflectorFactory` (doctrine/inflector 2+) dulu; fallback ke `LegacyInflector`. Pastikan doctrine/inflector terinstall.
 7. **Render path priority** — `templates.path` dari config diprioritaskan, lalu `src/Resources/skeleton/`. Jika file template ada di dua tempat → custom path menang.
+8. **ApiCrudMaker asumsikan entity dan repository sudah ada** — `getRepositoryClass()` di-guard di awal `ApiCrudRenderer::generate()` (throw kalau null); JANGAN hapus guard itu dan JANGAN pakai `?->`/null-check lagi setelahnya — phpstan (level 6, dengan phpstan-doctrine include) akan correctly flag itu sebagai dead code ("always evaluates to true"), karena guard clause di awal sudah menjamin non-null untuk sisa method.
+9. **Test kernel bundle ini sendiri root generator-nya di `Kematjaya\CrudMakerBundle\Tests`** (lihat `tests/config/services_test.yml`) — kalau maker generate class dengan prefix `Tests\...` (seperti `ApiCrudRenderer`'s unit-test output, prefix `Tests\Unit\Service\`), hasilnya numpuk jadi `tests/Tests/Unit/Service/...` (double "Tests") HANYA di test suite bundle ini sendiri. Ini bukan bug — di app consumer beneran (root generator `App\`), hasilnya normal `tests/Unit/Service/...`. Jangan "fix" double-nesting ini di kode maker, itu artefak testing-bundle-against-dirinya-sendiri.
+10. **phpstan-doctrine WAJIB di-include** — `phpstan.neon.dist` harus punya `includes: [vendor/phpstan/phpstan-doctrine/extension.neon]`. Tanpa ini, phpstan salah infer beberapa method Doctrine-related jadi "always true"/"never null" yang sebenarnya valid nullable — gampang kejebak nge-suppress padahal itu instalasi config yang belum lengkap.
 
 ## Context7
 

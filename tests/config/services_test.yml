@@ -14,3 +14,15 @@ services:
             - '@maker.file_manager'
             - 'Kematjaya\CrudMakerBundle\Tests'
             - '@maker.php_compat_util'
+
+    Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper:
+        public: true
+        arguments:
+            - 'Kematjaya\CrudMakerBundle\Tests\Entity'
+            - '@doctrine'
+
+    Kematjaya\CrudMakerBundle\Renderer\ApiCrudRenderer:
+        public: true
+
+    Kematjaya\CrudMakerBundle\Maker\ApiCrudMaker:
+        public: true
