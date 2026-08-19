@@ -217,6 +217,47 @@ final class ApiCrudMakerTest extends WebTestCase
         self::assertSame('int', $spec['idType']);
     }
 
+    public function testWritesApiResourceAndApiFilterAttributesToEntityWhenRequested(): void
+    {
+        $entityPath = dirname(__DIR__).'/tests/Entity/TestLegacyArticle.php';
+        $originalContents = (string) file_get_contents($entityPath);
+
+        try {
+            $this->invokeMaker([
+                'entity-class' => 'TestLegacyArticle',
+                'owner-property' => '-',
+                'permission-prefix' => 'test-legacy-articles',
+                'with-access-control' => true,
+                'with-tests' => false,
+                'searchable-fields' => 'headline',
+                'write-entity-attributes' => true,
+            ]);
+
+            $basePath = dirname(__DIR__).'/tests';
+            $this->generatedFiles[] = $basePath.'/Dto/TestLegacyArticleInput.php';
+            $this->generatedFiles[] = $basePath.'/Service/TestLegacyArticleServiceInterface.php';
+            $this->generatedFiles[] = $basePath.'/Service/TestLegacyArticleService.php';
+            $this->generatedFiles[] = $basePath.'/State/TestLegacyArticleWriteProcessor.php';
+            $this->generatedFiles[] = $basePath.'/Controller/TestLegacyArticleExportDataController.php';
+            $this->generatedFiles[] = dirname(__DIR__).'/crud-specs/TestLegacyArticle.json';
+
+            $newContents = (string) file_get_contents($entityPath);
+            self::assertStringContainsString('use ApiPlatform\Metadata\ApiResource;', $newContents);
+            self::assertStringContainsString('use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;', $newContents);
+            self::assertStringContainsString('#[ApiResource(', $newContents);
+            self::assertStringContainsString("#[ApiFilter(SearchFilter::class, properties: ['headline' => 'partial'])]", $newContents);
+            self::assertStringContainsString('is_granted(\'test-legacy-articles.delete\')', $newContents);
+            // pre-existing code must survive untouched
+            self::assertStringContainsString('public function setHeadline(string $headline): static', $newContents);
+
+            $lintProcess = new \Symfony\Component\Process\Process([\PHP_BINARY, '-l', $entityPath]);
+            $lintProcess->run();
+            self::assertTrue($lintProcess->isSuccessful(), $lintProcess->getErrorOutput());
+        } finally {
+            file_put_contents($entityPath, $originalContents);
+        }
+    }
+
     public function testThrowsWhenEntityHasNeitherConstructorNorSetters(): void
     {
         $this->expectException(\RuntimeException::class);

@@ -55,6 +55,7 @@ final class ApiCrudMaker extends AbstractMaker
             ->addArgument('with-access-control', InputArgument::OPTIONAL, 'Cek permission via kematjaya/access-control-bundle di WriteProcessor? (y/n)')
             ->addArgument('with-tests', InputArgument::OPTIONAL, 'Generate unit test untuk service? (y/n)')
             ->addArgument('searchable-fields', InputArgument::OPTIONAL, 'Field yang bisa dicari (search) di frontend, pisah dengan koma (mis. "title"), kosongkan/"-" kalau tidak ada')
+            ->addArgument('write-entity-attributes', InputArgument::OPTIONAL, 'Tambahkan #[ApiResource]/#[ApiFilter] otomatis ke entity? (y/n) — kalau tidak, di-print untuk ditempel manual')
         ;
 
         $inputConfig->setArgumentAsNonInteractive('entity-class');
@@ -63,6 +64,7 @@ final class ApiCrudMaker extends AbstractMaker
         $inputConfig->setArgumentAsNonInteractive('with-access-control');
         $inputConfig->setArgumentAsNonInteractive('with-tests');
         $inputConfig->setArgumentAsNonInteractive('searchable-fields');
+        $inputConfig->setArgumentAsNonInteractive('write-entity-attributes');
     }
 
     public function interact(InputInterface $input, ConsoleStyle $io, Command $command): void
@@ -109,6 +111,11 @@ final class ApiCrudMaker extends AbstractMaker
             $value = $io->askQuestion($question);
             $input->setArgument('searchable-fields', null !== $value ? $value : '-');
         }
+
+        if (null === $input->getArgument('write-entity-attributes')) {
+            $question = new ConfirmationQuestion('Tambahkan #[ApiResource]/#[ApiFilter] otomatis ke entity?', true);
+            $input->setArgument('write-entity-attributes', $io->askQuestion($question));
+        }
     }
 
     public function configureDependencies(DependencyBuilder $dependencies): void
@@ -154,6 +161,7 @@ final class ApiCrudMaker extends AbstractMaker
             (bool) $input->getArgument('with-access-control'),
             (bool) $input->getArgument('with-tests'),
             $searchableFields,
+            (bool) $input->getArgument('write-entity-attributes'),
         );
 
         $generator->writeChanges();

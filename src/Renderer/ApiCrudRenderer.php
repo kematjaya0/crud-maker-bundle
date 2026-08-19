@@ -4,6 +4,7 @@ namespace Kematjaya\CrudMakerBundle\Renderer;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping\ClassMetadata as OrmClassMetadata;
+use Kematjaya\CrudMakerBundle\Util\EntityAttributeWriter;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
 use Symfony\Bundle\MakerBundle\Doctrine\EntityDetails;
 use Symfony\Bundle\MakerBundle\Generator;
@@ -30,7 +31,7 @@ class ApiCrudRenderer extends AbstractRenderer
         Types::TIME_MUTABLE, Types::TIME_IMMUTABLE,
     ];
 
-    public function __construct(ContainerBagInterface $bag, private DoctrineHelper $doctrineHelper)
+    public function __construct(ContainerBagInterface $bag, private DoctrineHelper $doctrineHelper, private EntityAttributeWriter $entityAttributeWriter)
     {
         parent::__construct($bag);
     }
@@ -46,6 +47,7 @@ class ApiCrudRenderer extends AbstractRenderer
         bool $withAccessControl,
         bool $withTests,
         array $searchableFields = [],
+        bool $writeEntityAttributes = false,
     ): ApiCrudResult {
         $entityDoctrineDetails = $this->doctrineHelper->createDoctrineDetails($entityClassDetails->getFullName());
         if (null === $entityDoctrineDetails) {
@@ -166,6 +168,21 @@ class ApiCrudRenderer extends AbstractRenderer
         $specPath = $generator->getRootDirectory().'/crud-specs/'.$entityClassDetails->getShortName().'.json';
         $generator->dumpFile($specPath, $this->buildSpecJson($entityClassDetails, $fields, $permissionPrefix, $ownerProperty, $searchableFields, $timestampField, $idType));
 
+        $attributesWritten = false;
+        $attributeWriteError = null;
+        if ($writeEntityAttributes) {
+            $attributeWriteError = $this->tryWriteEntityAttributes(
+                $generator,
+                $entityClassDetails,
+                $inputClassDetails,
+                $processorClassDetails,
+                $permissionPrefix,
+                $withAccessControl,
+                $searchableFields,
+            );
+            $attributesWritten = null === $attributeWriteError;
+        }
+
         return new ApiCrudResult($this->buildNextSteps(
             $entityClassDetails,
             $inputClassDetails,
@@ -177,7 +194,115 @@ class ApiCrudRenderer extends AbstractRenderer
             $searchableFields,
             $sharedVars['export_route_path'],
             $sharedVars['export_limiter_name'],
+            $attributesWritten,
+            $attributeWriteError,
         ));
+    }
+
+    /**
+     * Attempts to add `#[ApiResource(...)]` (and, if there are searchable fields,
+     * `#[ApiFilter(...)]`) directly to the entity file via {@see EntityAttributeWriter}. Returns
+     * null on success, or a human-readable reason on failure (entity already has one of these
+     * attributes, or the file couldn't be parsed) — callers fall back to printing the manual
+     * paste-in-by-hand instructions in that case, rather than treating it as a hard error for
+     * the whole `make:kmj-api-crud` run.
+     *
+     * @param list<string> $searchableFields
+     */
+    private function tryWriteEntityAttributes(
+        Generator $generator,
+        ClassNameDetails $entityClassDetails,
+        ClassNameDetails $inputClassDetails,
+        ClassNameDetails $processorClassDetails,
+        string $permissionPrefix,
+        bool $withAccessControl,
+        array $searchableFields,
+    ): ?string {
+        $entityFullClassName = $entityClassDetails->getFullName();
+
+        try {
+            $reflection = new \ReflectionClass($entityFullClassName);
+        } catch (\ReflectionException $e) {
+            return $e->getMessage();
+        }
+
+        $path = $reflection->getFileName();
+        if (false === $path) {
+            return sprintf('Could not locate the source file for "%s".', $entityFullClassName);
+        }
+
+        $sourceCode = file_get_contents($path);
+        if (false === $sourceCode) {
+            return sprintf('Could not read "%s".', $path);
+        }
+
+        [$attributeCode, $useStatements] = $this->buildEntityAttributeCode(
+            $inputClassDetails,
+            $processorClassDetails,
+            $permissionPrefix,
+            $withAccessControl,
+            $searchableFields,
+        );
+
+        try {
+            $newSourceCode = $this->entityAttributeWriter->addClassAttributes($sourceCode, $attributeCode, $useStatements);
+        } catch (\RuntimeException $e) {
+            return $e->getMessage();
+        }
+
+        $generator->dumpFile($path, $newSourceCode);
+
+        return null;
+    }
+
+    /**
+     * Builds the raw `#[ApiResource(...)]` / `#[ApiFilter(...)]` attribute source and the
+     * `use` statements it needs — shared between the auto-write path
+     * ({@see tryWriteEntityAttributes}) and the manual paste-in-by-hand next-steps text
+     * ({@see buildNextSteps}), so the two never drift apart.
+     *
+     * @param list<string> $searchableFields
+     * @return array{0: string, 1: list<string>}
+     */
+    private function buildEntityAttributeCode(
+        ClassNameDetails $inputClassDetails,
+        ClassNameDetails $processorClassDetails,
+        string $permissionPrefix,
+        bool $withAccessControl,
+        array $searchableFields,
+    ): array {
+        $useStatements = [
+            'ApiPlatform\\Metadata\\ApiResource',
+            'ApiPlatform\\Metadata\\GetCollection',
+            'ApiPlatform\\Metadata\\Get',
+            'ApiPlatform\\Metadata\\Post',
+            'ApiPlatform\\Metadata\\Put',
+            'ApiPlatform\\Metadata\\Delete',
+            $inputClassDetails->getFullName(),
+            $processorClassDetails->getFullName(),
+        ];
+
+        $lines = [
+            '#[ApiResource(',
+            '    operations: [',
+            '        new GetCollection(),',
+            '        new Get(),',
+            '        new Post(input: '.$inputClassDetails->getShortName().'::class, processor: '.$processorClassDetails->getShortName().'::class),',
+            '        new Put(input: '.$inputClassDetails->getShortName().'::class, processor: '.$processorClassDetails->getShortName().'::class),',
+            $withAccessControl
+                ? '        new Delete(security: "is_granted(\''.$permissionPrefix.'.delete\')"),'
+                : '        new Delete(),',
+            '    ],',
+            ')]',
+        ];
+
+        if ([] !== $searchableFields) {
+            $useStatements[] = 'ApiPlatform\\Metadata\\ApiFilter';
+            $useStatements[] = 'ApiPlatform\\Doctrine\\Orm\\Filter\\SearchFilter';
+            $lines[] = '#[ApiFilter(SearchFilter::class, properties: ['.implode(', ', array_map(static fn (string $f) => "'".$f."' => 'partial'", $searchableFields)).'])]';
+        }
+
+        return [implode("\n", $lines), $useStatements];
     }
 
     private function resolveOwnerClass(Generator $generator, ClassNameDetails $entityClassDetails, string $ownerProperty): ClassNameDetails
@@ -390,23 +515,27 @@ class ApiCrudRenderer extends AbstractRenderer
         array $searchableFields,
         string $exportRoutePath,
         string $exportLimiterName,
+        bool $attributesWritten,
+        ?string $attributeWriteError,
     ): array {
-        $steps = [
-            'Tambahkan #[ApiResource] ke '.$entityClassDetails->getShortName().' (belum diubah otomatis):',
-            '',
-            '    #[ApiResource(',
-            '        operations: [',
-            '            new GetCollection(),',
-            '            new Get(),',
-            '            new Post(input: '.$inputClassDetails->getShortName().'::class, processor: '.$processorClassDetails->getShortName().'::class),',
-            '            new Put(input: '.$inputClassDetails->getShortName().'::class, processor: '.$processorClassDetails->getShortName().'::class),',
-            $withAccessControl
-                ? '            new Delete(security: "is_granted(\''.$permissionPrefix.'.delete\')"),'
-                : '            new Delete(),',
-            '        ],',
-            '    )]',
-            '',
-        ];
+        if ($attributesWritten) {
+            $steps = [
+                '#[ApiResource]'.([] !== $searchableFields ? ' dan #[ApiFilter]' : '').' sudah ditambahkan otomatis ke '.$entityClassDetails->getShortName().' — cek diff-nya sebelum commit.',
+                '',
+            ];
+        } else {
+            [$attributeCode] = $this->buildEntityAttributeCode($inputClassDetails, $processorClassDetails, $permissionPrefix, $withAccessControl, $searchableFields);
+            $indented = implode("\n", array_map(static fn (string $line) => '    '.$line, explode("\n", $attributeCode)));
+
+            $steps = [
+                null !== $attributeWriteError
+                    ? 'Tidak bisa menambahkan attribute otomatis ke '.$entityClassDetails->getShortName().' ('.$attributeWriteError.') — tempel manual:'
+                    : 'Tambahkan attribute berikut ke '.$entityClassDetails->getShortName().' (belum diubah otomatis):',
+                '',
+                $indented,
+                '',
+            ];
+        }
 
         if ($hasOwner) {
             $steps[] = 'CurrentUser'.$entityClassDetails->getShortName().'Extension ter-generate — pastikan ke-tag otomatis via autoconfigure (default kalau App\\ resource src/ mencakup State/).';
@@ -418,13 +547,6 @@ class ApiCrudRenderer extends AbstractRenderer
             $steps[] = '    gated: true, actions: { create: ..., edit: ..., delete: ..., bulk_delete: ..., export_all: ..., export_selected: ... } dengan prefix "'.$permissionPrefix.'"';
             $steps[] = '    (bulk_delete & export_selected murni dipakai untuk gating tombol di frontend, tidak ada endpoint backend terpisah untuk itu)';
             $steps[] = 'Lalu jalankan: bin/console kematjaya:access-control:sync';
-            $steps[] = '';
-        }
-
-        if ([] !== $searchableFields) {
-            $steps[] = 'Tambahkan #[ApiFilter] ke '.$entityClassDetails->getShortName().' supaya GetCollection bisa di-search lewat query string:';
-            $steps[] = '';
-            $steps[] = '    #[ApiFilter(SearchFilter::class, properties: ['.implode(', ', array_map(static fn (string $f) => "'".$f."' => 'partial'", $searchableFields)).'])]';
             $steps[] = '';
         }
 
