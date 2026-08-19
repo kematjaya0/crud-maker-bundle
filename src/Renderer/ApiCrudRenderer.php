@@ -35,6 +35,9 @@ class ApiCrudRenderer extends AbstractRenderer
         parent::__construct($bag);
     }
 
+    /**
+     * @param list<string> $searchableFields
+     */
     public function generate(
         ClassNameDetails $entityClassDetails,
         Generator $generator,
@@ -42,6 +45,7 @@ class ApiCrudRenderer extends AbstractRenderer
         ?string $permissionPrefix,
         bool $withAccessControl,
         bool $withTests,
+        array $searchableFields = [],
     ): ApiCrudResult {
         $entityDoctrineDetails = $this->doctrineHelper->createDoctrineDetails($entityClassDetails->getFullName());
         if (null === $entityDoctrineDetails) {
@@ -57,8 +61,12 @@ class ApiCrudRenderer extends AbstractRenderer
         }
 
         $fields = $this->buildFields($entityDoctrineDetails);
+        $timestampField = $this->findTimestampField($entityDoctrineDetails);
         $entityVar = lcfirst($this->singularize($entityClassDetails->getShortName()));
         $permissionPrefix ??= strtolower($this->pluralize($entityClassDetails->getShortName()));
+
+        $fieldNames = array_column($fields, 'name');
+        $searchableFields = array_values(array_intersect($searchableFields, $fieldNames));
 
         // getRepositoryClass() is guaranteed non-null here — guarded above.
         $repositoryClassDetails = $generator->createClassNameDetails('\\'.$entityDoctrineDetails->getRepositoryClass(), 'Repository\\', 'Repository');
@@ -70,6 +78,7 @@ class ApiCrudRenderer extends AbstractRenderer
         $extensionClassDetails = null !== $ownerClassDetails
             ? $generator->createClassNameDetails('CurrentUser'.$entityClassDetails->getRelativeNameWithoutSuffix().'Extension', 'State\\', 'Extension')
             : null;
+        $exportClassDetails = $generator->createClassNameDetails($entityClassDetails->getRelativeNameWithoutSuffix().'ExportDataController', 'Controller\\', 'ExportDataController');
 
         $sharedVars = [
             'entity_full_class_name' => $entityClassDetails->getFullName(),
@@ -78,6 +87,8 @@ class ApiCrudRenderer extends AbstractRenderer
             'input_full_class_name' => $inputClassDetails->getFullName(),
             'input_class_name' => $inputClassDetails->getShortName(),
             'fields' => $fields,
+            'searchable_fields' => $searchableFields,
+            'timestamp_field' => $timestampField,
             'owner_full_class_name' => $ownerClassDetails?->getFullName(),
             'owner_class_name' => $ownerClassDetails?->getShortName(),
             'owner_property' => $ownerProperty,
@@ -87,6 +98,9 @@ class ApiCrudRenderer extends AbstractRenderer
             'repository_full_class_name' => $repositoryClassDetails->getFullName(),
             'repository_class_name' => $repositoryClassDetails->getShortName(),
             'repository_var' => lcfirst($this->singularize($repositoryClassDetails->getShortName())),
+            'export_route_path' => '/api/'.$permissionPrefix.'/export-data',
+            'export_route_name' => 'app_'.str_replace('-', '_', $permissionPrefix).'_export_data',
+            'export_limiter_name' => str_replace('-', '_', $permissionPrefix).'_export_data',
         ];
 
         $generator->generateClass(
@@ -128,6 +142,12 @@ class ApiCrudRenderer extends AbstractRenderer
             );
         }
 
+        $generator->generateClass(
+            $exportClassDetails->getFullName(),
+            $this->getPath('api-crud/ExportDataController.tpl.php'),
+            $sharedVars,
+        );
+
         if ($withTests) {
             $testClassDetails = $generator->createClassNameDetails($entityClassDetails->getRelativeNameWithoutSuffix().'ServiceTest', 'Tests\\Unit\\Service\\', 'ServiceTest');
             $generator->generateClass(
@@ -141,7 +161,7 @@ class ApiCrudRenderer extends AbstractRenderer
         }
 
         $specPath = $generator->getRootDirectory().'/crud-specs/'.$entityClassDetails->getShortName().'.json';
-        $generator->dumpFile($specPath, $this->buildSpecJson($entityClassDetails, $fields, $permissionPrefix, $ownerProperty));
+        $generator->dumpFile($specPath, $this->buildSpecJson($entityClassDetails, $fields, $permissionPrefix, $ownerProperty, $searchableFields, $timestampField));
 
         return new ApiCrudResult($this->buildNextSteps(
             $entityClassDetails,
@@ -151,6 +171,9 @@ class ApiCrudRenderer extends AbstractRenderer
             $withAccessControl,
             null !== $ownerClassDetails,
             $specPath,
+            $searchableFields,
+            $sharedVars['export_route_path'],
+            $sharedVars['export_limiter_name'],
         ));
     }
 
@@ -215,6 +238,30 @@ class ApiCrudRenderer extends AbstractRenderer
         return $fields;
     }
 
+    /**
+     * Best-effort detection of a "created at" style timestamp field (e.g. `createdAt`), used to
+     * add a read-only "Created" column/CSV export field on the frontend. Returns null if none
+     * of the entity's datetime-typed fields look like a creation timestamp by name — the entity
+     * may simply not have one, which is fine (frontend omits the column).
+     */
+    private function findTimestampField(EntityDetails $entityDoctrineDetails): ?string
+    {
+        $identifier = $entityDoctrineDetails->getIdentifier();
+
+        foreach ($entityDoctrineDetails->getDisplayFields() as $fieldName => $mapping) {
+            if ($fieldName === $identifier) {
+                continue;
+            }
+
+            $doctrineType = (string) ($mapping['type'] ?? 'string');
+            if (in_array($doctrineType, self::SKIPPED_TYPES, true) && 1 === preg_match('/^created/i', $fieldName)) {
+                return $fieldName;
+            }
+        }
+
+        return null;
+    }
+
     private function toSpecType(string $phpType, string $doctrineType): string
     {
         return match (true) {
@@ -227,19 +274,22 @@ class ApiCrudRenderer extends AbstractRenderer
 
     /**
      * @param list<array{name: string, spec_type: string, nullable: bool, length: int|null}> $fields
+     * @param list<string> $searchableFields
      */
-    private function buildSpecJson(ClassNameDetails $entityClassDetails, array $fields, string $permissionPrefix, ?string $ownerProperty): string
+    private function buildSpecJson(ClassNameDetails $entityClassDetails, array $fields, string $permissionPrefix, ?string $ownerProperty, array $searchableFields, ?string $timestampField): string
     {
         $spec = [
             'entity' => $entityClassDetails->getShortName(),
             'permissionPrefix' => $permissionPrefix,
             'ownerProperty' => $ownerProperty,
+            'timestampField' => $timestampField,
             'fields' => array_map(
                 static fn (array $f) => [
                     'name' => $f['name'],
                     'type' => $f['spec_type'],
                     'required' => !$f['nullable'],
                     'maxLength' => $f['length'],
+                    'searchable' => in_array($f['name'], $searchableFields, true),
                 ],
                 $fields,
             ),
@@ -249,6 +299,7 @@ class ApiCrudRenderer extends AbstractRenderer
     }
 
     /**
+     * @param list<string> $searchableFields
      * @return list<string>
      */
     private function buildNextSteps(
@@ -259,6 +310,9 @@ class ApiCrudRenderer extends AbstractRenderer
         bool $withAccessControl,
         bool $hasOwner,
         string $specPath,
+        array $searchableFields,
+        string $exportRoutePath,
+        string $exportLimiterName,
     ): array {
         $steps = [
             'Tambahkan #[ApiResource] ke '.$entityClassDetails->getShortName().' (belum diubah otomatis):',
@@ -284,11 +338,28 @@ class ApiCrudRenderer extends AbstractRenderer
 
         if ($withAccessControl) {
             $steps[] = 'Tambahkan permission key ke config/permissions/default.yaml (kematjaya/access-control-bundle):';
-            $steps[] = '    gated: true, actions: { create: ..., edit: ..., delete: ... } dengan prefix "'.$permissionPrefix.'"';
+            $steps[] = '    gated: true, actions: { create: ..., edit: ..., delete: ..., bulk_delete: ..., export_all: ..., export_selected: ... } dengan prefix "'.$permissionPrefix.'"';
+            $steps[] = '    (bulk_delete & export_selected murni dipakai untuk gating tombol di frontend, tidak ada endpoint backend terpisah untuk itu)';
             $steps[] = 'Lalu jalankan: bin/console kematjaya:access-control:sync';
             $steps[] = '';
         }
 
+        if ([] !== $searchableFields) {
+            $steps[] = 'Tambahkan #[ApiFilter] ke '.$entityClassDetails->getShortName().' supaya GetCollection bisa di-search lewat query string:';
+            $steps[] = '';
+            $steps[] = '    #[ApiFilter(SearchFilter::class, properties: ['.implode(', ', array_map(static fn (string $f) => "'".$f."' => 'partial'", $searchableFields)).'])]';
+            $steps[] = '';
+        }
+
+        $steps[] = $entityClassDetails->getShortName().'ExportDataController ter-generate (endpoint export CSV, route "'.$exportRoutePath.'") — controller ini mengasumsikan getter standar get{Field}() ada di entity untuk tiap field yang di-export; sesuaikan manual kalau nama getter beda (mis. boolean pakai is{Field}()).';
+        $steps[] = 'Tambahkan rate limiter untuk export ke config/packages/framework.yaml:';
+        $steps[] = '';
+        $steps[] = '    rate_limiter:';
+        $steps[] = '        '.$exportLimiterName.':';
+        $steps[] = '            policy: fixed_window';
+        $steps[] = '            limit: 5';
+        $steps[] = "            interval: '1 minute'";
+        $steps[] = '';
         $steps[] = 'Cek Service yang di-generate — constructor/update() entity diasumsikan urutan parameter sama dengan urutan field Doctrine metadata; sesuaikan manual kalau beda.';
         $steps[] = 'Field bertipe date/datetime otomatis di-skip dari Input DTO — tambahkan manual kalau memang perlu jadi input user.';
         $steps[] = 'Spec untuk @kematjaya/crud-ui-generator ditulis ke: '.$specPath;

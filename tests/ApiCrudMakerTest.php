@@ -91,6 +91,7 @@ final class ApiCrudMakerTest extends WebTestCase
             'permission-prefix' => 'test-articles',
             'with-access-control' => true,
             'with-tests' => true,
+            'searchable-fields' => 'title',
         ]);
 
         // This bundle's own test kernel roots the generator at
@@ -108,6 +109,13 @@ final class ApiCrudMakerTest extends WebTestCase
             'State/TestArticleWriteProcessor.php' => ['final readonly class TestArticleWriteProcessor implements ProcessorInterface', "'test-articles.create'", "'test-articles.edit'"],
             'State/CurrentUserTestArticleExtension.php' => ['final readonly class CurrentUserTestArticleExtension', 'TestArticle::class !== $resourceClass'],
             'Tests/Unit/Service/TestArticleServiceTest.php' => ['final class TestArticleServiceTest extends TestCase'],
+            'Controller/TestArticleExportDataController.php' => [
+                'final readonly class TestArticleExportDataController',
+                "#[Route('/api/test-articles/export-data', name: 'app_test_articles_export_data'",
+                "'test-articles.export_all'",
+                "'title' => \$e->getTitle()",
+                "\$qb->expr()->like('e.title', ':search')",
+            ],
         ];
 
         foreach ($expected as $relativePath => $needles) {
@@ -144,6 +152,11 @@ final class ApiCrudMakerTest extends WebTestCase
         self::assertNotContains('createdAt', $fieldNames, 'datetime fields should be skipped from the spec/input');
         self::assertNotContains('id', $fieldNames);
         self::assertNotContains('owner', $fieldNames, 'owner is an association, handled separately from scalar fields');
+
+        $fieldsByName = array_combine($fieldNames, $spec['fields']);
+        self::assertTrue($fieldsByName['title']['searchable']);
+        self::assertFalse($fieldsByName['body']['searchable']);
+        self::assertSame('createdAt', $spec['timestampField']);
     }
 
     public function testGeneratesWithoutOwnerOrAccessControlWhenNotRequested(): void
@@ -162,6 +175,7 @@ final class ApiCrudMakerTest extends WebTestCase
         $this->generatedFiles[] = $basePath.'/Service/TestArticleServiceInterface.php';
         $this->generatedFiles[] = $basePath.'/Service/TestArticleService.php';
         $this->generatedFiles[] = $basePath.'/State/TestArticleWriteProcessor.php';
+        $this->generatedFiles[] = $basePath.'/Controller/TestArticleExportDataController.php';
         $this->generatedFiles[] = dirname(__DIR__).'/crud-specs/TestArticle.json';
 
         self::assertFileExists($basePath.'/Dto/TestArticleInput.php');

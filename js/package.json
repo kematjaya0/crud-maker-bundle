@@ -1,0 +1,26 @@
+{
+    "name": "@kematjaya/crud-ui-generator",
+    "version": "0.1.0",
+    "description": "Next.js CRUD frontend generator that reads crud-specs/{Entity}.json sidecars written by kematjaya/crud-maker-bundle's make:kmj-api-crud and generates pages, components, and BFF routes matching the boilerplate's hand-written Notes feature.",
+    "type": "module",
+    "license": "MIT",
+    "author": "Nur Hidayatullah <kematjaya0@gmail.com>",
+    "bin": {
+        "crud-ui-generate": "./dist/cli.js"
+    },
+    "files": [
+        "dist"
+    ],
+    "engines": {
+        "node": ">=18"
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "prepublishOnly": "npm run build",
+        "test": "node --test --experimental-strip-types src/**/*.test.ts"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "typescript": "^5.6.0"
+    }
+}

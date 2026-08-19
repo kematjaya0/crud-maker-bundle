@@ -54,6 +54,7 @@ final class ApiCrudMaker extends AbstractMaker
             ->addArgument('permission-prefix', InputArgument::OPTIONAL, 'Prefix permission key (mis. "notes" -> notes.create/notes.edit), kosongkan untuk ditebak dari nama entity')
             ->addArgument('with-access-control', InputArgument::OPTIONAL, 'Cek permission via kematjaya/access-control-bundle di WriteProcessor? (y/n)')
             ->addArgument('with-tests', InputArgument::OPTIONAL, 'Generate unit test untuk service? (y/n)')
+            ->addArgument('searchable-fields', InputArgument::OPTIONAL, 'Field yang bisa dicari (search) di frontend, pisah dengan koma (mis. "title"), kosongkan/"-" kalau tidak ada')
         ;
 
         $inputConfig->setArgumentAsNonInteractive('entity-class');
@@ -61,6 +62,7 @@ final class ApiCrudMaker extends AbstractMaker
         $inputConfig->setArgumentAsNonInteractive('permission-prefix');
         $inputConfig->setArgumentAsNonInteractive('with-access-control');
         $inputConfig->setArgumentAsNonInteractive('with-tests');
+        $inputConfig->setArgumentAsNonInteractive('searchable-fields');
     }
 
     public function interact(InputInterface $input, ConsoleStyle $io, Command $command): void
@@ -100,6 +102,13 @@ final class ApiCrudMaker extends AbstractMaker
             $question = new ConfirmationQuestion('Generate unit test untuk service?', true);
             $input->setArgument('with-tests', $io->askQuestion($question));
         }
+
+        if (null === $input->getArgument('searchable-fields')) {
+            $argument = $command->getDefinition()->getArgument('searchable-fields');
+            $question = new Question($argument->getDescription(), '-');
+            $value = $io->askQuestion($question);
+            $input->setArgument('searchable-fields', null !== $value ? $value : '-');
+        }
     }
 
     public function configureDependencies(DependencyBuilder $dependencies): void
@@ -131,6 +140,12 @@ final class ApiCrudMaker extends AbstractMaker
         $permissionPrefix = $input->getArgument('permission-prefix');
         $permissionPrefix = (is_string($permissionPrefix) && '-' !== $permissionPrefix && '' !== trim($permissionPrefix)) ? trim($permissionPrefix) : null;
 
+        $searchableFieldsRaw = $input->getArgument('searchable-fields');
+        $searchableFields = [];
+        if (is_string($searchableFieldsRaw) && '-' !== $searchableFieldsRaw && '' !== trim($searchableFieldsRaw)) {
+            $searchableFields = array_values(array_filter(array_map('trim', explode(',', $searchableFieldsRaw))));
+        }
+
         $result = $this->renderer->generate(
             $entityClassDetails,
             $generator,
@@ -138,6 +153,7 @@ final class ApiCrudMaker extends AbstractMaker
             $permissionPrefix,
             (bool) $input->getArgument('with-access-control'),
             (bool) $input->getArgument('with-tests'),
+            $searchableFields,
         );
 
         $generator->writeChanges();

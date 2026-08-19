@@ -12,3 +12,4 @@ composer.lock
 /tests/State/
 /tests/Tests/
 /tests/Filter/
+/tests/Controller/
