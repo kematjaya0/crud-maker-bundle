@@ -36,10 +36,21 @@ final class <?= $class_name ?> extends TestCase
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $entityManager->expects(self::once())->method('flush');
 
+<?php if ('setter' === $write_mode): ?>
+        $<?= $entity_var ?> = new <?= $entity_class_name ?>();
+
+        $result = (new <?= $service_class_name ?>($entityManager))->update($<?= $entity_var ?>, new <?= $input_class_name ?>(<?php foreach ($fields as $i => $field): ?><?= $i > 0 ? ', ' : '' ?><?= 'string' === $field['doctrine_type'] || 'text' === $field['doctrine_type'] ? "'updated'" : ('bool' === $field['php_type'] ? 'false' : '2') ?><?php endforeach ?>));
+
+        self::assertSame($<?= $entity_var ?>, $result);
+<?php foreach ($fields as $field): ?>
+        self::assertSame(<?= 'string' === $field['doctrine_type'] || 'text' === $field['doctrine_type'] ? "'updated'" : ('bool' === $field['php_type'] ? 'false' : '2') ?>, $result->get<?= ucfirst($field['name']) ?>());
+<?php endforeach ?>
+<?php else: ?>
         // TODO: build a real <?= $entity_class_name ?> fixture (constructor args match the entity, not necessarily this Input)
         $<?= $entity_var ?> = $this->createMock(<?= $entity_class_name ?>::class);
         $<?= $entity_var ?>->expects(self::once())->method('update');
 
         (new <?= $service_class_name ?>($entityManager))->update($<?= $entity_var ?>, new <?= $input_class_name ?>(<?php foreach ($fields as $i => $field): ?><?= $i > 0 ? ', ' : '' ?><?= 'string' === $field['doctrine_type'] || 'text' === $field['doctrine_type'] ? "'updated'" : ('bool' === $field['php_type'] ? 'false' : '2') ?><?php endforeach ?>));
+<?php endif ?>
     }
 }

@@ -196,7 +196,7 @@ final class ApiCrudMakerTest extends WebTestCase
             'owner-property' => '-',
             'permission-prefix' => 'test-legacy-articles',
             'with-access-control' => false,
-            'with-tests' => false,
+            'with-tests' => true,
         ]);
 
         $basePath = dirname(__DIR__).'/tests';
@@ -205,11 +205,21 @@ final class ApiCrudMakerTest extends WebTestCase
         $this->generatedFiles[] = $basePath.'/Service/TestLegacyArticleService.php';
         $this->generatedFiles[] = $basePath.'/State/TestLegacyArticleWriteProcessor.php';
         $this->generatedFiles[] = $basePath.'/Controller/TestLegacyArticleExportDataController.php';
+        $this->generatedFiles[] = $basePath.'/Tests/Unit/Service/TestLegacyArticleServiceTest.php';
         $this->generatedFiles[] = dirname(__DIR__).'/crud-specs/TestLegacyArticle.json';
 
         $serviceContents = (string) file_get_contents($basePath.'/Service/TestLegacyArticleService.php');
         self::assertStringContainsString('new TestLegacyArticle()', $serviceContents);
         self::assertStringContainsString("setHeadline(trim(\$input->headline))", $serviceContents);
+
+        $testContents = (string) file_get_contents($basePath.'/Tests/Unit/Service/TestLegacyArticleServiceTest.php');
+        self::assertStringNotContainsString("method('update')", $testContents, 'setter-mode entities have no update() method to mock');
+        self::assertStringContainsString('new TestLegacyArticle()', $testContents);
+        self::assertStringContainsString("getHeadline()", $testContents);
+
+        $lintProcess = new \Symfony\Component\Process\Process([\PHP_BINARY, '-l', $basePath.'/Tests/Unit/Service/TestLegacyArticleServiceTest.php']);
+        $lintProcess->run();
+        self::assertTrue($lintProcess->isSuccessful(), $lintProcess->getErrorOutput());
         self::assertStringNotContainsString('->update(', $serviceContents);
 
         $specFile = dirname(__DIR__).'/crud-specs/TestLegacyArticle.json';
