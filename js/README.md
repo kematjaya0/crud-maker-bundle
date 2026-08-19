@@ -55,8 +55,7 @@ Appended to (multi-entity, idempotent — each entity gets one marker-guarded bl
 
 ## Assumptions / caveats
 
-- **Ids are UUID strings.** `validId()` in the generated `[id]/route.ts` checks a 36-char
-  hex-with-dashes pattern. Adjust by hand if an entity uses a different id type.
+- **Id type comes from the spec's `idType`** (`uuid`/`int`/`string`, written by `ApiCrudRenderer::detectIdType()` off the entity's actual id column) — `validId()` in the generated `[id]/route.ts` and the `is{Entity}` type guard in `api-shapes.ts` are generated to match. Older spec files without `idType` default to `uuid`.
 - **The list search box only searches one field.** If more than one field is marked
   `searchable` in the spec, the list view (backed by ApiPlatform's `SearchFilter`, one query
   param per property) only wires up the first one. The export endpoint ORs across all of them.

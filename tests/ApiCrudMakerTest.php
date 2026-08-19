@@ -188,4 +188,46 @@ final class ApiCrudMakerTest extends WebTestCase
         $serviceInterfaceContents = (string) file_get_contents($basePath.'/Service/TestArticleServiceInterface.php');
         self::assertStringContainsString('function create(TestArticleInput $input): TestArticle', $serviceInterfaceContents);
     }
+
+    public function testGeneratesSetterBasedServiceForEntityWithoutConstructor(): void
+    {
+        $this->invokeMaker([
+            'entity-class' => 'TestLegacyArticle',
+            'owner-property' => '-',
+            'permission-prefix' => 'test-legacy-articles',
+            'with-access-control' => false,
+            'with-tests' => false,
+        ]);
+
+        $basePath = dirname(__DIR__).'/tests';
+        $this->generatedFiles[] = $basePath.'/Dto/TestLegacyArticleInput.php';
+        $this->generatedFiles[] = $basePath.'/Service/TestLegacyArticleServiceInterface.php';
+        $this->generatedFiles[] = $basePath.'/Service/TestLegacyArticleService.php';
+        $this->generatedFiles[] = $basePath.'/State/TestLegacyArticleWriteProcessor.php';
+        $this->generatedFiles[] = $basePath.'/Controller/TestLegacyArticleExportDataController.php';
+        $this->generatedFiles[] = dirname(__DIR__).'/crud-specs/TestLegacyArticle.json';
+
+        $serviceContents = (string) file_get_contents($basePath.'/Service/TestLegacyArticleService.php');
+        self::assertStringContainsString('new TestLegacyArticle()', $serviceContents);
+        self::assertStringContainsString("setHeadline(trim(\$input->headline))", $serviceContents);
+        self::assertStringNotContainsString('->update(', $serviceContents);
+
+        $specFile = dirname(__DIR__).'/crud-specs/TestLegacyArticle.json';
+        $spec = json_decode((string) file_get_contents($specFile), true);
+        self::assertSame('int', $spec['idType']);
+    }
+
+    public function testThrowsWhenEntityHasNeitherConstructorNorSetters(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/setHeadline/');
+
+        $this->invokeMaker([
+            'entity-class' => 'TestBrokenArticle',
+            'owner-property' => '-',
+            'permission-prefix' => 'test-broken-articles',
+            'with-access-control' => false,
+            'with-tests' => false,
+        ]);
+    }
 }

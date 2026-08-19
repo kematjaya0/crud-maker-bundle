@@ -17,10 +17,16 @@ final readonly class <?= $class_name ?> implements <?= $service_interface_class_
     {
     }
 
+<?php $fieldValue = static fn (array $field): string => ('string' === $field['doctrine_type'] || 'text' === $field['spec_type'] || 'text' === $field['doctrine_type']) ? sprintf('trim($input->%s)', $field['name']) : sprintf('$input->%s', $field['name']); ?>
+<?php if ('setter' === $write_mode): ?>
 <?php if (null !== $owner_class_name): ?>
     public function create(<?= $owner_class_name ?> $<?= $owner_var ?>, <?= $input_class_name ?> $input): <?= $entity_class_name ?><?= "\n" ?>
     {
-        $<?= $entity_var ?> = new <?= $entity_class_name ?>($<?= $owner_var ?>, <?php foreach ($fields as $i => $field): ?><?= $i > 0 ? ', ' : '' ?><?= 'string' === $field['doctrine_type'] || 'text' === $field['spec_type'] || 'text' === $field['doctrine_type'] ? sprintf('trim($input->%s)', $field['name']) : sprintf('$input->%s', $field['name']) ?><?php endforeach ?>);
+        $<?= $entity_var ?> = new <?= $entity_class_name ?>();
+        $<?= $entity_var ?>->set<?= ucfirst($owner_property) ?>($<?= $owner_var ?>);
+<?php foreach ($fields as $field): ?>
+        $<?= $entity_var ?>->set<?= ucfirst($field['name']) ?>(<?= $fieldValue($field) ?>);
+<?php endforeach ?>
         $this->entityManager->persist($<?= $entity_var ?>);
         $this->entityManager->flush();
 
@@ -29,7 +35,10 @@ final readonly class <?= $class_name ?> implements <?= $service_interface_class_
 <?php else: ?>
     public function create(<?= $input_class_name ?> $input): <?= $entity_class_name ?><?= "\n" ?>
     {
-        $<?= $entity_var ?> = new <?= $entity_class_name ?>(<?php foreach ($fields as $i => $field): ?><?= $i > 0 ? ', ' : '' ?><?= 'string' === $field['doctrine_type'] || 'text' === $field['spec_type'] || 'text' === $field['doctrine_type'] ? sprintf('trim($input->%s)', $field['name']) : sprintf('$input->%s', $field['name']) ?><?php endforeach ?>);
+        $<?= $entity_var ?> = new <?= $entity_class_name ?>();
+<?php foreach ($fields as $field): ?>
+        $<?= $entity_var ?>->set<?= ucfirst($field['name']) ?>(<?= $fieldValue($field) ?>);
+<?php endforeach ?>
         $this->entityManager->persist($<?= $entity_var ?>);
         $this->entityManager->flush();
 
@@ -39,9 +48,40 @@ final readonly class <?= $class_name ?> implements <?= $service_interface_class_
 
     public function update(<?= $entity_class_name ?> $<?= $entity_var ?>, <?= $input_class_name ?> $input): <?= $entity_class_name ?><?= "\n" ?>
     {
-        $<?= $entity_var ?>->update(<?php foreach ($fields as $i => $field): ?><?= $i > 0 ? ', ' : '' ?><?= 'string' === $field['doctrine_type'] || 'text' === $field['spec_type'] || 'text' === $field['doctrine_type'] ? sprintf('trim($input->%s)', $field['name']) : sprintf('$input->%s', $field['name']) ?><?php endforeach ?>);
+<?php foreach ($fields as $field): ?>
+        $<?= $entity_var ?>->set<?= ucfirst($field['name']) ?>(<?= $fieldValue($field) ?>);
+<?php endforeach ?>
         $this->entityManager->flush();
 
         return $<?= $entity_var ?>;
     }
+<?php else: ?>
+<?php if (null !== $owner_class_name): ?>
+    public function create(<?= $owner_class_name ?> $<?= $owner_var ?>, <?= $input_class_name ?> $input): <?= $entity_class_name ?><?= "\n" ?>
+    {
+        $<?= $entity_var ?> = new <?= $entity_class_name ?>($<?= $owner_var ?>, <?php foreach ($fields as $i => $field): ?><?= $i > 0 ? ', ' : '' ?><?= $fieldValue($field) ?><?php endforeach ?>);
+        $this->entityManager->persist($<?= $entity_var ?>);
+        $this->entityManager->flush();
+
+        return $<?= $entity_var ?>;
+    }
+<?php else: ?>
+    public function create(<?= $input_class_name ?> $input): <?= $entity_class_name ?><?= "\n" ?>
+    {
+        $<?= $entity_var ?> = new <?= $entity_class_name ?>(<?php foreach ($fields as $i => $field): ?><?= $i > 0 ? ', ' : '' ?><?= $fieldValue($field) ?><?php endforeach ?>);
+        $this->entityManager->persist($<?= $entity_var ?>);
+        $this->entityManager->flush();
+
+        return $<?= $entity_var ?>;
+    }
+<?php endif ?>
+
+    public function update(<?= $entity_class_name ?> $<?= $entity_var ?>, <?= $input_class_name ?> $input): <?= $entity_class_name ?><?= "\n" ?>
+    {
+        $<?= $entity_var ?>->update(<?php foreach ($fields as $i => $field): ?><?= $i > 0 ? ', ' : '' ?><?= $fieldValue($field) ?><?php endforeach ?>);
+        $this->entityManager->flush();
+
+        return $<?= $entity_var ?>;
+    }
+<?php endif ?>
 }

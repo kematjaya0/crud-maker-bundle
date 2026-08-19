@@ -87,7 +87,7 @@ export function ${entityPascal}Table() {
     const [error, setError] = useState('');
     const [deleteTarget, setDeleteTarget] = useState<${entityPascal} | null>(null);
     const [deleting, setDeleting] = useState(false);
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [selectedIds, setSelectedIds] = useState<Set<${entityPascal}['id']>>(new Set());
     const [bulkDeleteConfirming, setBulkDeleteConfirming] = useState(false);
     const [bulkDeleting, setBulkDeleting] = useState(false);
     const [toastMessage, setToastMessage] = useState(
@@ -196,7 +196,7 @@ ${hasTitleFilterLine}    const trueEmpty = !loading && !error && !hasSearch && t
         }
     }, [someOnPageSelected, allOnPageSelected]);
 
-    function toggleSelect(id: string) {
+    function toggleSelect(id: ${entityPascal}['id']) {
         setSelectedIds((prev) => {
             const next = new Set(prev);
             if (next.has(id)) next.delete(id);

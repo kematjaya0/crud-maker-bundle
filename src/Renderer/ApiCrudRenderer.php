@@ -62,6 +62,8 @@ class ApiCrudRenderer extends AbstractRenderer
 
         $fields = $this->buildFields($entityDoctrineDetails);
         $timestampField = $this->findTimestampField($entityDoctrineDetails);
+        $idType = $this->detectIdType($entityDoctrineDetails);
+        $writeMode = $this->detectWriteMode($entityClassDetails->getFullName(), $fields, $ownerProperty);
         $entityVar = lcfirst($this->singularize($entityClassDetails->getShortName()));
         $permissionPrefix ??= strtolower($this->pluralize($entityClassDetails->getShortName()));
 
@@ -89,6 +91,7 @@ class ApiCrudRenderer extends AbstractRenderer
             'fields' => $fields,
             'searchable_fields' => $searchableFields,
             'timestamp_field' => $timestampField,
+            'write_mode' => $writeMode,
             'owner_full_class_name' => $ownerClassDetails?->getFullName(),
             'owner_class_name' => $ownerClassDetails?->getShortName(),
             'owner_property' => $ownerProperty,
@@ -161,7 +164,7 @@ class ApiCrudRenderer extends AbstractRenderer
         }
 
         $specPath = $generator->getRootDirectory().'/crud-specs/'.$entityClassDetails->getShortName().'.json';
-        $generator->dumpFile($specPath, $this->buildSpecJson($entityClassDetails, $fields, $permissionPrefix, $ownerProperty, $searchableFields, $timestampField));
+        $generator->dumpFile($specPath, $this->buildSpecJson($entityClassDetails, $fields, $permissionPrefix, $ownerProperty, $searchableFields, $timestampField, $idType));
 
         return new ApiCrudResult($this->buildNextSteps(
             $entityClassDetails,
@@ -262,6 +265,79 @@ class ApiCrudRenderer extends AbstractRenderer
         return null;
     }
 
+    /**
+     * Identifies the entity's id column shape so the frontend generator can pick a matching
+     * `validId()` check instead of hard-assuming UUIDs — not every entity uses them (e.g. a
+     * plain `make:entity`-scaffolded one with an auto-increment integer id).
+     */
+    private function detectIdType(EntityDetails $entityDoctrineDetails): string
+    {
+        $identifier = $entityDoctrineDetails->getIdentifier();
+        $mapping = $entityDoctrineDetails->getDisplayFields()[$identifier] ?? null;
+        $doctrineType = (string) ($mapping['type'] ?? 'string');
+
+        return match ($doctrineType) {
+            'uuid', Types::GUID => 'uuid',
+            Types::INTEGER, Types::SMALLINT, Types::BIGINT => 'int',
+            default => 'string',
+        };
+    }
+
+    /**
+     * Picks how the generated Service creates/updates the entity: `constructor` (calls
+     * `new Entity(...$fields)` + `$entity->update(...$fields)`, the Note/TestArticle style this
+     * renderer was originally built around) or `setter` (calls `new Entity()` then
+     * `$entity->setField(...)` per field, for plain `make:entity`-scaffolded entities that don't
+     * declare a matching constructor/update()). Throws instead of silently generating broken code
+     * (calling a constructor/update() that doesn't match the entity just gets args silently
+     * dropped or a fatal "undefined method" at runtime) if neither pattern is viable.
+     *
+     * @param list<array{name: string}> $fields
+     */
+    private function detectWriteMode(string $entityFullClassName, array $fields, ?string $ownerProperty): string
+    {
+        $reflection = new \ReflectionClass($entityFullClassName);
+        $constructor = $reflection->getConstructor();
+
+        $hasCompatibleConstructor = null !== $constructor
+            && $constructor->getNumberOfParameters() >= count($fields)
+            && $reflection->hasMethod('update');
+
+        if ($hasCompatibleConstructor) {
+            return 'constructor';
+        }
+
+        $hasNoArgConstructor = null === $constructor || 0 === $constructor->getNumberOfRequiredParameters();
+
+        $missingSetters = [];
+        foreach ($fields as $field) {
+            $setter = 'set'.ucfirst($field['name']);
+            if (!$reflection->hasMethod($setter)) {
+                $missingSetters[] = $setter.'()';
+            }
+        }
+        if (null !== $ownerProperty) {
+            $ownerSetter = 'set'.ucfirst($ownerProperty);
+            if (!$reflection->hasMethod($ownerSetter)) {
+                $missingSetters[] = $ownerSetter.'()';
+            }
+        }
+
+        if ($hasNoArgConstructor && [] === $missingSetters) {
+            return 'setter';
+        }
+
+        throw new \RuntimeException(sprintf(
+            '"%s" tidak punya pola constructor+update() maupun setter yang lengkap untuk make:kmj-api-crud. '.
+            'Constructor yang ada butuh %d parameter wajib (perlu 0, atau constructor(%d+ parameter) DAN method update()). '.
+            'Setter yang hilang: %s. Tambahkan salah satu pola itu ke entity dulu, lalu jalankan ulang make:kmj-api-crud.',
+            $entityFullClassName,
+            $constructor?->getNumberOfRequiredParameters() ?? 0,
+            count($fields),
+            [] !== $missingSetters ? implode(', ', $missingSetters) : '(constructor tidak 0-argumen)',
+        ));
+    }
+
     private function toSpecType(string $phpType, string $doctrineType): string
     {
         return match (true) {
@@ -276,13 +352,14 @@ class ApiCrudRenderer extends AbstractRenderer
      * @param list<array{name: string, spec_type: string, nullable: bool, length: int|null}> $fields
      * @param list<string> $searchableFields
      */
-    private function buildSpecJson(ClassNameDetails $entityClassDetails, array $fields, string $permissionPrefix, ?string $ownerProperty, array $searchableFields, ?string $timestampField): string
+    private function buildSpecJson(ClassNameDetails $entityClassDetails, array $fields, string $permissionPrefix, ?string $ownerProperty, array $searchableFields, ?string $timestampField, string $idType): string
     {
         $spec = [
             'entity' => $entityClassDetails->getShortName(),
             'permissionPrefix' => $permissionPrefix,
             'ownerProperty' => $ownerProperty,
             'timestampField' => $timestampField,
+            'idType' => $idType,
             'fields' => array_map(
                 static fn (array $f) => [
                     'name' => $f['name'],

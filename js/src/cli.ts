@@ -128,7 +128,7 @@ function main(): void {
     if (searchableFields(spec).length > 1) {
         console.log(`  4. Note: multiple searchable fields were configured (${searchableFields(spec).join(', ')}); the list view's single search box only queries by "${searchField(spec)}" (ApiPlatform SearchFilter's per-property param convention doesn't support one box matching several properties). The export endpoint does OR across all of them.`);
     }
-    console.log(`  Assumes UUID-shaped ids (matches this boilerplate's convention) — see validId() in the generated app/api/${names.entitiesKebab}/[id]/route.ts if this entity uses a different id type.`);
+    console.log(`  Id type: "${spec.idType}" (from the spec's "idType") — validId() in the generated app/api/${names.entitiesKebab}/[id]/route.ts was generated to match.`);
     console.log(`  Run "npm run format" afterwards — generated files aren't pre-formatted to this project's Prettier config.`);
 }
 

@@ -23,7 +23,8 @@ export function apiShapesImport(names: Names): string {
 
 export function apiShapesBlock(spec: CrudSpec, names: Names): string {
     const { entityPascal, entitiesPascal } = names;
-    const checks = ['isRecord(value)', "typeof value.id === 'string'"];
+    const idJsType = 'int' === spec.idType ? 'number' : 'string';
+    const checks = ['isRecord(value)', `typeof value.id === '${idJsType}'`];
     for (const field of spec.fields) {
         checks.push(`typeof value.${field.name} === '${tsType(field)}'`);
     }

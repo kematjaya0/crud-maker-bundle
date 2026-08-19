@@ -8,11 +8,14 @@ export type FieldSpec = {
     searchable: boolean;
 };
 
+export type IdType = 'uuid' | 'int' | 'string';
+
 export type CrudSpec = {
     entity: string;
     permissionPrefix: string;
     ownerProperty: string | null;
     timestampField: string | null;
+    idType: IdType;
     fields: FieldSpec[];
 };
 
@@ -58,11 +61,15 @@ export function loadSpec(specPath: string): CrudSpec {
         throw new Error(`Spec file "fields" is missing or malformed: ${specPath}`);
     }
 
+    const idType: IdType =
+        spec.idType === 'int' || spec.idType === 'string' || spec.idType === 'uuid' ? spec.idType : 'uuid';
+
     return {
         entity: spec.entity,
         permissionPrefix: spec.permissionPrefix,
         ownerProperty: typeof spec.ownerProperty === 'string' ? spec.ownerProperty : null,
         timestampField: typeof spec.timestampField === 'string' ? spec.timestampField : null,
+        idType,
         fields: spec.fields,
     };
 }

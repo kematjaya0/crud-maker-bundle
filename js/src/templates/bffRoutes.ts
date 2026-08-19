@@ -38,7 +38,13 @@ export const revalidate = 0;
 `;
 }
 
-export function itemRoute(_spec: CrudSpec, names: Names): string {
+function validIdCheck(idType: CrudSpec['idType']): string {
+    if (idType === 'int') return 'return /^[1-9][0-9]*$/.test(id);';
+    if (idType === 'string') return "return id.length > 0;";
+    return "return /^[0-9a-fA-F-]{36}$/.test(id);";
+}
+
+export function itemRoute(spec: CrudSpec, names: Names): string {
     const { entityCamel, entitiesKebab } = names;
     return `import type { NextRequest } from 'next/server';
 import { authedBackend } from '@/lib/bff';
@@ -48,7 +54,7 @@ import { ${entityCamel}Schema } from '@/lib/schemas';
 type Params = { params: Promise<{ id: string }> };
 
 function validId(id: string) {
-    return /^[0-9a-fA-F-]{36}$/.test(id);
+    ${validIdCheck(spec.idType)}
 }
 
 export async function GET(_request: NextRequest, context: Params) {
