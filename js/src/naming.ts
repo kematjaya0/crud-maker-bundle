@@ -40,3 +40,31 @@ export function searchField(spec: CrudSpec): string | null {
 export function searchableFields(spec: CrudSpec): string[] {
     return spec.fields.filter((f) => f.searchable).map((f) => f.name);
 }
+
+/** "createdAt" -> "Created At", "TestArticle" -> "Test Article". */
+export function humanize(identifier: string): string {
+    const words = identifier
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/[-_]/g, ' ')
+        .trim()
+        .split(/\s+/);
+    return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+/** "TestArticles" -> "test articles" — used for prose/aria copy. */
+export function lowerWords(identifier: string): string {
+    return humanize(identifier).toLowerCase();
+}
+
+/**
+ * Fields shown as table columns / export CSV columns: everything except long-text (textarea)
+ * fields, mirroring how the hand-written Notes table shows `title` but not `body`.
+ */
+export function displayFields(spec: CrudSpec) {
+    return spec.fields.filter((f) => f.type !== 'textarea');
+}
+
+/** Field used to label a single row in delete-confirmation copy / aria-labels. */
+export function labelField(spec: CrudSpec): string {
+    return displayFields(spec)[0]?.name ?? spec.fields[0]?.name ?? 'id';
+}
