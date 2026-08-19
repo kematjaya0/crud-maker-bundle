@@ -10,7 +10,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\RateLimiter\RateLimiterFactory;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -22,7 +22,7 @@ final readonly class <?= $class_name ?><?= "\n" ?>
     public function __construct(
         private <?= $repository_class_name ?> $<?= $repository_var ?>,
         private Security $security,
-        #[Target('<?= $export_limiter_name ?>')] private RateLimiterFactory $exportLimiter,
+        #[Target('<?= $export_limiter_name ?>')] private RateLimiterFactoryInterface $exportLimiter,
     ) {
     }
 
