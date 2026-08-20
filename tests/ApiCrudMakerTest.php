@@ -31,6 +31,27 @@ final class ApiCrudMakerTest extends WebTestCase
     /** @var list<string> */
     private array $generatedFiles = [];
 
+    /**
+     * `make:kmj-api-crud` injects an export-query method into the entity's EXISTING repository
+     * file (see {@see \Kematjaya\CrudMakerBundle\Util\RepositoryMethodWriter}) — unlike the
+     * files tracked in $generatedFiles, these must be restored rather than deleted, otherwise
+     * a second test run collides with the already-injected method.
+     *
+     * @var array<string, string>
+     */
+    private array $repositoryBackups = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $basePath = dirname(__DIR__).'/tests';
+        foreach (['Repository/TestArticleRepository.php', 'Repository/TestLegacyArticleRepository.php', 'Repository/TestBrokenArticleRepository.php'] as $relativePath) {
+            $path = $basePath.'/'.$relativePath;
+            $this->repositoryBackups[$path] = (string) file_get_contents($path);
+        }
+    }
+
     protected function tearDown(): void
     {
         parent::tearDown();
@@ -42,6 +63,11 @@ final class ApiCrudMakerTest extends WebTestCase
             }
         }
         $this->generatedFiles = [];
+
+        foreach ($this->repositoryBackups as $path => $contents) {
+            file_put_contents($path, $contents);
+        }
+        $this->repositoryBackups = [];
 
         $this->restoreExceptionHandler();
     }
@@ -113,14 +139,26 @@ final class ApiCrudMakerTest extends WebTestCase
                 'final readonly class TestArticleExportDataController',
                 "#[Route('/api/test-articles/export-data', name: 'app_test_articles_export_data'",
                 "'test-articles.export_all'",
-                "'title' => \$e->getTitle()",
-                "\$qb->expr()->like('e.title', ':search')",
+                "'title' => \$item['title']",
+                '->findExportDataForOwner($user, $search, self::MAX_ITEMS + 1)',
+                'private function problem(',
+            ],
+            'Repository/TestArticleRepository.php' => [
+                'public function findExportDataForOwner(TestOwner $owner, ?string $search, int $limit): array',
+                "->select('e.title, e.body, e.createdAt')",
+                "->andWhere('e.owner = :owner')->setParameter('owner', \$owner)",
+                "\$builder->expr()->like('e.title', ':search')",
             ],
         ];
 
         foreach ($expected as $relativePath => $needles) {
             $file = $basePath.'/'.$relativePath;
-            $this->generatedFiles[] = $file;
+            // Repository/TestArticleRepository.php is a pre-existing fixture file that gets a
+            // method injected, not a freshly-generated one — it's restored via
+            // $repositoryBackups in tearDown(), not deleted, so it's deliberately not added here.
+            if (!str_starts_with($relativePath, 'Repository/')) {
+                $this->generatedFiles[] = $file;
+            }
 
             self::assertFileExists($file, sprintf('Expected "%s" to be generated', $relativePath));
 

@@ -5,8 +5,10 @@ namespace Kematjaya\CrudMakerBundle\Renderer;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping\ClassMetadata as OrmClassMetadata;
 use Kematjaya\CrudMakerBundle\Util\EntityAttributeWriter;
+use Kematjaya\CrudMakerBundle\Util\RepositoryMethodWriter;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
 use Symfony\Bundle\MakerBundle\Doctrine\EntityDetails;
+use Symfony\Bundle\MakerBundle\FileManager;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
@@ -31,8 +33,13 @@ class ApiCrudRenderer extends AbstractRenderer
         Types::TIME_MUTABLE, Types::TIME_IMMUTABLE,
     ];
 
-    public function __construct(ContainerBagInterface $bag, private DoctrineHelper $doctrineHelper, private EntityAttributeWriter $entityAttributeWriter)
-    {
+    public function __construct(
+        ContainerBagInterface $bag,
+        private DoctrineHelper $doctrineHelper,
+        private EntityAttributeWriter $entityAttributeWriter,
+        private RepositoryMethodWriter $repositoryMethodWriter,
+        private FileManager $fileManager,
+    ) {
         parent::__construct($bag);
     }
 
@@ -65,6 +72,7 @@ class ApiCrudRenderer extends AbstractRenderer
         $fields = $this->buildFields($entityDoctrineDetails);
         $timestampField = $this->findTimestampField($entityDoctrineDetails);
         $timestampFieldClass = $this->timestampFieldClass($entityDoctrineDetails, $timestampField);
+        $identifierField = $entityDoctrineDetails->getIdentifier();
         $idType = $this->detectIdType($entityDoctrineDetails);
         $writeMode = $this->detectWriteMode($entityClassDetails->getFullName(), $fields, $ownerProperty);
         $entityVar = lcfirst($this->singularize($entityClassDetails->getShortName()));
@@ -108,6 +116,10 @@ class ApiCrudRenderer extends AbstractRenderer
             'export_route_path' => '/api/'.$permissionPrefix.'/export-data',
             'export_route_name' => 'app_'.str_replace('-', '_', $permissionPrefix).'_export_data',
             'export_limiter_name' => str_replace('-', '_', $permissionPrefix).'_export_data',
+            'identifier_field' => $identifierField,
+            'export_method_name' => null !== $ownerProperty ? 'findExportDataForOwner' : 'findExportData',
+            'export_select_fields' => $this->buildExportSelectFields($fields, $timestampField),
+            'export_return_type_doc' => $this->buildExportReturnTypeDoc($fields, $timestampField, $timestampFieldClass),
         ];
 
         $generator->generateClass(
@@ -155,6 +167,8 @@ class ApiCrudRenderer extends AbstractRenderer
             $sharedVars,
         );
 
+        $repositoryMethodError = $this->tryWriteRepositoryExportMethod($generator, $repositoryClassDetails, $sharedVars);
+
         if ($withTests) {
             $testClassDetails = $generator->createClassNameDetails($entityClassDetails->getRelativeNameWithoutSuffix().'ServiceTest', 'Tests\\Unit\\Service\\', 'ServiceTest');
             $generator->generateClass(
@@ -198,6 +212,9 @@ class ApiCrudRenderer extends AbstractRenderer
             $sharedVars['export_limiter_name'],
             $attributesWritten,
             $attributeWriteError,
+            $repositoryClassDetails->getShortName(),
+            $sharedVars['export_method_name'],
+            $repositoryMethodError,
         ));
     }
 
@@ -255,6 +272,87 @@ class ApiCrudRenderer extends AbstractRenderer
         $generator->dumpFile($path, $newSourceCode);
 
         return null;
+    }
+
+    /**
+     * Attempts to add the export-query method (`findExportData`/`findExportDataForOwner`)
+     * directly to the repository file via {@see RepositoryMethodWriter}, rendered from
+     * `RepositoryExportMethod.tpl.php`. Returns null on success, or a human-readable reason on
+     * failure (repository already has a method with that name, or the file couldn't be parsed)
+     * — callers fall back to printing manual paste-in-by-hand instructions in that case, same
+     * resilience pattern as {@see tryWriteEntityAttributes}.
+     *
+     * @param array<string, mixed> $sharedVars
+     */
+    private function tryWriteRepositoryExportMethod(
+        Generator $generator,
+        ClassNameDetails $repositoryClassDetails,
+        array $sharedVars,
+    ): ?string {
+        $repositoryFullClassName = $repositoryClassDetails->getFullName();
+
+        try {
+            $reflection = new \ReflectionClass($repositoryFullClassName);
+        } catch (\ReflectionException $e) {
+            return $e->getMessage();
+        }
+
+        $path = $reflection->getFileName();
+        if (false === $path) {
+            return sprintf('Could not locate the source file for "%s".', $repositoryFullClassName);
+        }
+
+        $sourceCode = file_get_contents($path);
+        if (false === $sourceCode) {
+            return sprintf('Could not read "%s".', $path);
+        }
+
+        $methodCode = $this->fileManager->parseTemplate($this->getPath('api-crud/RepositoryExportMethod.tpl.php'), $sharedVars);
+
+        $useStatements = [];
+        if (null !== $sharedVars['owner_full_class_name']) {
+            $useStatements[] = (string) $sharedVars['owner_full_class_name'];
+        }
+
+        try {
+            $newSourceCode = $this->repositoryMethodWriter->addMethod($sourceCode, $methodCode, $useStatements);
+        } catch (\RuntimeException $e) {
+            return $e->getMessage();
+        }
+
+        $generator->dumpFile($path, $newSourceCode);
+
+        return null;
+    }
+
+    /**
+     * @param list<array{name: string, php_type: string}> $fields
+     */
+    private function buildExportSelectFields(array $fields, ?string $timestampField): string
+    {
+        $names = array_column($fields, 'name');
+        if (null !== $timestampField) {
+            $names[] = $timestampField;
+        }
+
+        return implode(', ', array_map(static fn (string $name): string => 'e.'.$name, $names));
+    }
+
+    /**
+     * @param list<array{name: string, php_type: string}> $fields
+     */
+    private function buildExportReturnTypeDoc(array $fields, ?string $timestampField, ?string $timestampFieldClass): string
+    {
+        $parts = array_map(
+            static fn (array $field): string => $field['name'].': '.$field['php_type'],
+            $fields,
+        );
+
+        if (null !== $timestampField) {
+            $parts[] = $timestampField.': ?'.$timestampFieldClass;
+        }
+
+        return 'array{'.implode(', ', $parts).'}';
     }
 
     /**
@@ -539,6 +637,9 @@ class ApiCrudRenderer extends AbstractRenderer
         string $exportLimiterName,
         bool $attributesWritten,
         ?string $attributeWriteError,
+        string $repositoryClassName,
+        string $exportMethodName,
+        ?string $repositoryMethodError,
     ): array {
         if ($attributesWritten) {
             $steps = [
@@ -572,7 +673,13 @@ class ApiCrudRenderer extends AbstractRenderer
             $steps[] = '';
         }
 
-        $steps[] = $entityClassDetails->getShortName().'ExportDataController ter-generate (endpoint export CSV, route "'.$exportRoutePath.'") — controller ini mengasumsikan getter standar get{Field}() ada di entity untuk tiap field yang di-export; sesuaikan manual kalau nama getter beda (mis. boolean pakai is{Field}()).';
+        $steps[] = $entityClassDetails->getShortName().'ExportDataController ter-generate (endpoint export CSV, route "'.$exportRoutePath.'") — controller ini tipis, query-nya didelegasikan ke '.$repositoryClassName.'::'.$exportMethodName.'().';
+        if (null === $repositoryMethodError) {
+            $steps[] = $exportMethodName.'() sudah ditambahkan otomatis ke '.$repositoryClassName.' — cek diff-nya sebelum commit.';
+        } else {
+            $steps[] = 'Tidak bisa menambahkan '.$exportMethodName.'() otomatis ke '.$repositoryClassName.' ('.$repositoryMethodError.') — tambahkan method itu manual, lihat isi '.$entityClassDetails->getShortName().'ExportDataController untuk signature yang dipanggil.';
+        }
+        $steps[] = '';
         $steps[] = 'Tambahkan rate limiter untuk export ke config/packages/framework.yaml:';
         $steps[] = '';
         $steps[] = '    rate_limiter:';

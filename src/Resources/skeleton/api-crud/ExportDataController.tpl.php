@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace <?= $namespace ?>;
 
-use <?= $entity_full_class_name ?>;
 use <?= $repository_full_class_name ?>;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -18,6 +18,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
 final readonly class <?= $class_name ?><?= "\n" ?>
 {
     private const MAX_ITEMS = 5000;
+<?php if ([] !== $searchable_fields): ?>
+    private const SEARCH_MAX_LENGTH = 200;
+<?php endif ?>
 
     public function __construct(
         private <?= $repository_class_name ?> $<?= $repository_var ?>,
@@ -30,61 +33,73 @@ final readonly class <?= $class_name ?><?= "\n" ?>
     {
         $user = $this->security->getUser();
         if (!$user instanceof UserInterface) {
-            return new JsonResponse(['title' => 'Authentication required.'], 401);
+            return $this->problem('Authentication required.', Response::HTTP_UNAUTHORIZED);
         }
 
 <?php if ($with_access_control): ?>
         if (!$this->security->isGranted('<?= $permission_prefix ?>.export_all')) {
-            return new JsonResponse(['title' => 'Forbidden.'], 403);
+            return $this->problem('Forbidden.', Response::HTTP_FORBIDDEN);
         }
 
 <?php endif ?>
 <?php if ([] !== $searchable_fields): ?>
-        $search = trim((string) $request->query->get('search', ''));
-        if (mb_strlen($search) > 200) {
-            return new JsonResponse(['title' => 'Search term too long.'], 422);
+        $search = $this->normalizeSearch($request);
+        if (is_string($search) && self::SEARCH_MAX_LENGTH < mb_strlen($search)) {
+            return $this->problem('Search term too long.', Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
 <?php endif ?>
         $limit = $this->exportLimiter->create($user->getUserIdentifier())->consume(1);
         if (!$limit->isAccepted()) {
-            return new JsonResponse(['title' => 'Too Many Requests.'], 429, ['Retry-After' => (string) $limit->getRetryAfter()->getTimestamp()]);
+            $retryAfter = max(1, $limit->getRetryAfter()->getTimestamp() - time());
+
+            return $this->problem('Too Many Requests.', Response::HTTP_TOO_MANY_REQUESTS, ['Retry-After' => (string) $retryAfter]);
         }
 
-        $qb = $this-><?= $repository_var ?>->createQueryBuilder('e')
-            ->orderBy('e.<?= $timestamp_field ?? 'id' ?>', 'DESC')
-            ->setMaxResults(self::MAX_ITEMS + 1);
-
-<?php if (null !== $owner_property): ?>
-        $qb->andWhere('e.<?= $owner_property ?> = :owner')->setParameter('owner', $user);
-
-<?php endif ?>
-<?php if ([] !== $searchable_fields): ?>
-        if ('' !== $search) {
-            $qb->andWhere($qb->expr()->orX(
-<?php foreach ($searchable_fields as $i => $field): ?>
-                $qb->expr()->like('e.<?= $field ?>', ':search')<?= $i < count($searchable_fields) - 1 ? ',' : '' ?><?= "\n" ?>
-<?php endforeach ?>
-            ))->setParameter('search', '%'.$search.'%');
-        }
-
-<?php endif ?>
-        /** @var list<<?= $entity_class_name ?>> $items */
-        $items = $qb->getQuery()->getResult();
-        if (count($items) > self::MAX_ITEMS) {
-            return new JsonResponse(['title' => 'Persempit filter pencarian, terlalu banyak data untuk diexport.'], 422);
+        $items = $this-><?= $repository_var ?>-><?= $export_method_name ?>(<?php if (null !== $owner_property): ?>$user, <?php endif ?><?php if ([] !== $searchable_fields): ?>$search, <?php endif ?>self::MAX_ITEMS + 1);
+        if (self::MAX_ITEMS < count($items)) {
+            return $this->problem(
+                'Persempit filter pencarian, terlalu banyak data untuk diexport.',
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                [],
+                'Export Too Large',
+            );
         }
 
         return new JsonResponse([
             'totalItems' => count($items),
-            'member' => array_map(static fn (<?= $entity_class_name ?> $e): array => [
+            'member' => array_map(static fn (array $item): array => [
 <?php foreach ($fields as $field): ?>
-                '<?= $field['name'] ?>' => $e->get<?= ucfirst($field['name']) ?>(),
+                '<?= $field['name'] ?>' => $item['<?= $field['name'] ?>'],
 <?php endforeach ?>
 <?php if (null !== $timestamp_field): ?>
-                '<?= $timestamp_field ?>' => $e->get<?= ucfirst($timestamp_field) ?>()?->format(\DATE_ATOM) ?? '',
+                '<?= $timestamp_field ?>' => $item['<?= $timestamp_field ?>']?->format(\DATE_ATOM) ?? '',
 <?php endif ?>
             ], $items),
         ]);
+    }
+<?php if ([] !== $searchable_fields): ?>
+
+    private function normalizeSearch(Request $request): ?string
+    {
+        $search = $request->query->get('search');
+        if (!is_string($search)) {
+            return null;
+        }
+
+        $search = trim($search);
+
+        return '' === $search ? null : $search;
+    }
+<?php endif ?>
+
+    /** @param array<string, string> $headers */
+    private function problem(string $detail, int $status, array $headers = [], ?string $title = null): JsonResponse
+    {
+        return new JsonResponse([
+            'title' => $title ?? Response::$statusTexts[$status] ?? 'Error',
+            'detail' => $detail,
+            'status' => $status,
+        ], $status, ['Content-Type' => 'application/problem+json'] + $headers);
     }
 }
