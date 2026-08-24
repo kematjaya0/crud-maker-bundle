@@ -28,7 +28,7 @@ use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 final readonly class <?= $class_name ?> implements ProcessorInterface
 {
     public function __construct(
-        private <?= $service_interface_class_name ?> $<?= lcfirst($entity_var) ?>s,
+        private <?= $service_interface_class_name ?> $<?= $entities_var ?>,
 <?php if (null !== $repository_full_class_name): ?>
         private <?= $repository_class_name ?> $<?= $repository_var ?>,
 <?php endif ?>
@@ -59,9 +59,9 @@ final readonly class <?= $class_name ?> implements ProcessorInterface
 <?php endif ?>
         if ($operation instanceof Post) {
 <?php if (null !== $owner_class_name): ?>
-            return $this-><?= lcfirst($entity_var) ?>s->create($<?= $owner_var ?>, $data);
+            return $this-><?= $entities_var ?>->create($<?= $owner_var ?>, $data);
 <?php else: ?>
-            return $this-><?= lcfirst($entity_var) ?>s->create($data);
+            return $this-><?= $entities_var ?>->create($data);
 <?php endif ?>
         }
 
@@ -75,6 +75,6 @@ final readonly class <?= $class_name ?> implements ProcessorInterface
         }
 <?php endif ?>
 
-        return $this-><?= lcfirst($entity_var) ?>s->update($<?= $entity_var ?>, $data);
+        return $this-><?= $entities_var ?>->update($<?= $entity_var ?>, $data);
     }
 }

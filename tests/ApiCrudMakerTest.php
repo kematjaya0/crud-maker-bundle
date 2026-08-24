@@ -222,6 +222,11 @@ final class ApiCrudMakerTest extends WebTestCase
 
         $processorContents = (string) file_get_contents($basePath.'/State/TestArticleWriteProcessor.php');
         self::assertStringNotContainsString('AuthorizationCheckerInterface', $processorContents);
+        // Constructor property must be the pluralized entity name (e.g. "testArticles"), not a
+        // naive lcfirst($entity_var).'s' suffix — that breaks for entities already plural in
+        // grammar (e.g. "News" would become "$newss").
+        self::assertStringContainsString('private TestArticleServiceInterface $testArticles,', $processorContents);
+        self::assertStringContainsString('$this->testArticles->create($data);', $processorContents);
 
         $serviceInterfaceContents = (string) file_get_contents($basePath.'/Service/TestArticleServiceInterface.php');
         self::assertStringContainsString('function create(TestArticleInput $input): TestArticle', $serviceInterfaceContents);

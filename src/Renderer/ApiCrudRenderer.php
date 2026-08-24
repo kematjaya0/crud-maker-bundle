@@ -97,6 +97,7 @@ class ApiCrudRenderer extends AbstractRenderer
             'entity_full_class_name' => $entityClassDetails->getFullName(),
             'entity_class_name' => $entityClassDetails->getShortName(),
             'entity_var' => $entityVar,
+            'entities_var' => lcfirst($this->pluralize($entityClassDetails->getShortName())),
             'input_full_class_name' => $inputClassDetails->getFullName(),
             'input_class_name' => $inputClassDetails->getShortName(),
             'fields' => $fields,

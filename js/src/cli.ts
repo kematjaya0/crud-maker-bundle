@@ -6,6 +6,7 @@ import { appendBlock, appendBlockWithImport, newLog, writeIfMissing, writeNewFil
 import * as shared from './templates/sharedComponents.js';
 import { editPage, listPage, newPage } from './templates/pages.js';
 import { table } from './templates/table.js';
+import { entityHook } from './templates/hook.js';
 import { form } from './templates/form.js';
 import { useExportHook } from './templates/useExport.js';
 import { queryLib } from './templates/queryLib.js';
@@ -85,6 +86,7 @@ function main(): void {
     writeNewFile(join(compDir, `${names.entityPascal}Table.tsx`), table(spec, names), log);
     writeNewFile(join(compDir, `${names.entityPascal}Form.tsx`), form(spec, names), log);
     writeNewFile(join(compDir, `use${names.entitiesPascal}Export.ts`), useExportHook(spec, names), log);
+    writeNewFile(join(compDir, `use${names.entitiesPascal}.ts`), entityHook(spec, names), log);
 
     const libDir = join(src, 'lib');
     writeNewFile(join(libDir, `${names.entitiesKebab}-query.ts`), queryLib(spec, names), log);
