@@ -4,13 +4,17 @@ import { displayFields } from '../naming.js';
 
 /**
  * Fresh-file bootstrap, only used when src/types/api.ts doesn't exist yet. In the boilerplate
- * app this file already exists (written for the Notes feature) with these same JsonLd/Json
- * helpers and the `paths`/`components` import from the OpenAPI-generated `./api.generated` —
- * this header is only a fallback for a from-scratch project that hasn't set that up yet.
+ * app this file already exists (written for the Notes feature) with this same Json helper
+ * and the `paths`/`components` import from the OpenAPI-generated `./api.generated` — this
+ * header is only a fallback for a from-scratch project that hasn't set that up yet.
+ *
+ * Extracts the `application/json` (not `application/ld+json`/Hydra) response shape, matching
+ * how `lib/bff.ts`'s `authedBackend()` calls the API Platform backend — plain JSON, so
+ * collections come back as `{ totalItems, member }` rather than a Hydra-wrapped `hydra:member`.
  */
 export const typesApiFileHeader = `import type { components, paths } from './api.generated';
 
-type JsonLd<T> = T extends { 'application/ld+json': infer V } ? V : never;
+type Json<T> = T extends { 'application/json': infer V } ? V : never;
 `;
 
 export function typesApiMarker(entityPascal: string): string {
@@ -33,9 +37,9 @@ export function typesApiBlock(spec: CrudSpec, names: Names): string {
     return `
 type ${entitiesPascal}CollectionResponses = paths['/api/${entitiesKebab}']['get']['responses'];
 type ${entityPascal}PostResponses = paths['/api/${entitiesKebab}']['post']['responses'];
-type Generated${entityPascal} = NonNullable<JsonLd<${entityPascal}PostResponses[201]['content']>>;
+type Generated${entityPascal} = NonNullable<Json<${entityPascal}PostResponses[201]['content']>>;
 type Generated${entitiesPascal}Collection = NonNullable<
-    JsonLd<${entitiesPascal}CollectionResponses[200]['content']>
+    Json<${entitiesPascal}CollectionResponses[200]['content']>
 >;
 
 export type ${entityPascal}Input = components['schemas']['${entityPascal}.${entityPascal}Input'];
