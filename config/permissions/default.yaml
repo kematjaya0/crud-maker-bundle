@@ -1,0 +1,15 @@
+sections:
+  - name: Overview
+    items:
+      - key: dashboard
+        label: Dashboard
+        href: /dashboard
+        icon: bi-grid-1x2-fill
+
+  - name: Administration
+    items:
+      - key: admin
+        label: Admin
+        href: /dashboard/admin
+        icon: bi-shield-lock
+        roles: [ROLE_ADMIN]

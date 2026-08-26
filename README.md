@@ -59,11 +59,14 @@ php bin/console make:kmj-api-crud Note owner notes true true title true --no-int
 - `tests/Unit/Service/{Entity}ServiceTest.php` (only if `with-tests`)
 - `crud-specs/{Entity}.json` — the frontend generator's input
 - **The entity file itself**, if `write-entity-attributes` was confirmed: `#[ApiResource(operations: [...])]` and (if there are searchable fields) `#[ApiFilter(SearchFilter::class, ...)]`, added via AST manipulation ([`nikic/php-parser`](https://github.com/nikic/PHP-Parser)'s format-preserving printer — the same technique `make:entity` uses internally) so the rest of the file is untouched. If the entity already has one of these attributes, or `write-entity-attributes` was declined, the block is printed instead for you to paste in by hand.
+- **`config/packages/framework.yaml`**: a `framework.rate_limiter.{limiter}` entry for the export endpoint, inserted via targeted text insertion (comments/formatting elsewhere in the file are left untouched). Idempotent — a limiter that already exists by that name is left alone.
+- **`config/permissions/default.yaml`** (only if `with-access-control`): the permission item for this resource (`gated: true` + `actions: { create, edit, delete, bulk_delete, export_selected, export_all }`), added to (or created in) a `Master` section. If an item with that `key` already exists, only its missing pieces (`gated: true` and/or missing action keys) are filled in — existing fields, including custom action labels, are left untouched. A brand-new item gets a placeholder `href`/`icon` you'll want to review.
+
+If either config file is missing, or its structure isn't recognized, the writer falls back to printing the block for you to paste in by hand instead of failing the whole command — check the printed next-steps either way.
 
 ### 5. Remaining manual steps (printed after generation)
 
-- Add the permission keys to `config/permissions/default.yaml` (if `with-access-control`), then `bin/console kematjaya:access-control:sync`.
-- Add the printed `rate_limiter` block for the export endpoint to `config/packages/framework.yaml`.
+- After the permission key is in place, run `bin/console kematjaya:access-control:sync` (if `with-access-control`).
 - Review the Service if the entity's field order might not match the Input DTO's.
 
 ### 6. Generate the frontend

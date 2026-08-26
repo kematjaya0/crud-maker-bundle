@@ -9,6 +9,8 @@ services:
     Kematjaya\CrudMakerBundle\Renderer\ApiCrudRenderer: ~
     Kematjaya\CrudMakerBundle\Util\EntityAttributeWriter: ~
     Kematjaya\CrudMakerBundle\Util\RepositoryMethodWriter: ~
+    Kematjaya\CrudMakerBundle\Util\RateLimiterConfigWriter: ~
+    Kematjaya\CrudMakerBundle\Util\PermissionManifestWriter: ~
     Kematjaya\CrudMakerBundle\Maker\FilterMaker:
         tags: ['maker.command']
 

@@ -33,9 +33,13 @@ final class ApiCrudMakerTest extends WebTestCase
 
     /**
      * `make:kmj-api-crud` injects an export-query method into the entity's EXISTING repository
-     * file (see {@see \Kematjaya\CrudMakerBundle\Util\RepositoryMethodWriter}) — unlike the
-     * files tracked in $generatedFiles, these must be restored rather than deleted, otherwise
-     * a second test run collides with the already-injected method.
+     * file (see {@see \Kematjaya\CrudMakerBundle\Util\RepositoryMethodWriter}), and — on the
+     * same resilience/idempotency pattern — a rate limiter into config/packages/framework.yaml
+     * and a permission item into config/permissions/default.yaml (see
+     * {@see \Kematjaya\CrudMakerBundle\Util\RateLimiterConfigWriter} and
+     * {@see \Kematjaya\CrudMakerBundle\Util\PermissionManifestWriter}). Unlike the files
+     * tracked in $generatedFiles, these must be restored rather than deleted, otherwise a
+     * second test run collides with the already-injected content.
      *
      * @var array<string, string>
      */
@@ -48,6 +52,11 @@ final class ApiCrudMakerTest extends WebTestCase
         $basePath = dirname(__DIR__).'/tests';
         foreach (['Repository/TestArticleRepository.php', 'Repository/TestLegacyArticleRepository.php', 'Repository/TestBrokenArticleRepository.php'] as $relativePath) {
             $path = $basePath.'/'.$relativePath;
+            $this->repositoryBackups[$path] = (string) file_get_contents($path);
+        }
+
+        foreach (['config/packages/framework.yaml', 'config/permissions/default.yaml'] as $relativePath) {
+            $path = dirname(__DIR__).'/'.$relativePath;
             $this->repositoryBackups[$path] = (string) file_get_contents($path);
         }
     }
@@ -195,6 +204,37 @@ final class ApiCrudMakerTest extends WebTestCase
         self::assertTrue($fieldsByName['title']['searchable']);
         self::assertFalse($fieldsByName['body']['searchable']);
         self::assertSame('createdAt', $spec['timestampField']);
+
+        // Rate limiter and permission item get written directly into the app's config files
+        // (see RateLimiterConfigWriter / PermissionManifestWriter) rather than only printed as
+        // manual next-steps — restored via $repositoryBackups in tearDown().
+        $frameworkYaml = (string) file_get_contents(dirname(__DIR__).'/config/packages/framework.yaml');
+        $frameworkParsed = \Symfony\Component\Yaml\Yaml::parse($frameworkYaml);
+        self::assertSame('fixed_window', $frameworkParsed['framework']['rate_limiter']['test_articles_export_data']['policy']);
+        self::assertSame(5, $frameworkParsed['framework']['rate_limiter']['test_articles_export_data']['limit']);
+        self::assertStringContainsString('# see https://symfony.com/doc/current/reference/configuration/framework.html', $frameworkYaml, 'pre-existing comments must survive the targeted insert');
+
+        $permissionsYaml = (string) file_get_contents(dirname(__DIR__).'/config/permissions/default.yaml');
+        $permissionsParsed = \Symfony\Component\Yaml\Yaml::parse($permissionsYaml);
+        $masterItems = null;
+        foreach ($permissionsParsed['sections'] as $section) {
+            if ('Master' === $section['name']) {
+                $masterItems = $section['items'];
+            }
+        }
+        self::assertNotNull($masterItems, 'a "Master" section should have been created');
+        $notesItem = null;
+        foreach ($masterItems as $item) {
+            if ('test-articles' === $item['key']) {
+                $notesItem = $item;
+            }
+        }
+        self::assertNotNull($notesItem);
+        self::assertTrue($notesItem['gated']);
+        self::assertSame(
+            ['create', 'edit', 'delete', 'bulk_delete', 'export_selected', 'export_all'],
+            array_keys($notesItem['actions']),
+        );
     }
 
     public function testGeneratesWithoutOwnerOrAccessControlWhenNotRequested(): void
@@ -230,6 +270,15 @@ final class ApiCrudMakerTest extends WebTestCase
 
         $serviceInterfaceContents = (string) file_get_contents($basePath.'/Service/TestArticleServiceInterface.php');
         self::assertStringContainsString('function create(TestArticleInput $input): TestArticle', $serviceInterfaceContents);
+
+        // The export rate limiter is always written (export is generated regardless of
+        // access control), but the permission manifest is only touched when access
+        // control is actually requested.
+        $frameworkParsed = \Symfony\Component\Yaml\Yaml::parse((string) file_get_contents(dirname(__DIR__).'/config/packages/framework.yaml'));
+        self::assertArrayHasKey('testarticles_export_data', $frameworkParsed['framework']['rate_limiter']);
+
+        $permissionsYaml = (string) file_get_contents(dirname(__DIR__).'/config/permissions/default.yaml');
+        self::assertStringNotContainsString('key: testarticles', $permissionsYaml, 'permission manifest must be left untouched when with-access-control is false');
     }
 
     public function testGeneratesSetterBasedServiceForEntityWithoutConstructor(): void

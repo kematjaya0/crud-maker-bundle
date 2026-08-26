@@ -5,6 +5,8 @@ namespace Kematjaya\CrudMakerBundle\Renderer;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping\ClassMetadata as OrmClassMetadata;
 use Kematjaya\CrudMakerBundle\Util\EntityAttributeWriter;
+use Kematjaya\CrudMakerBundle\Util\PermissionManifestWriter;
+use Kematjaya\CrudMakerBundle\Util\RateLimiterConfigWriter;
 use Kematjaya\CrudMakerBundle\Util\RepositoryMethodWriter;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
 use Symfony\Bundle\MakerBundle\Doctrine\EntityDetails;
@@ -38,6 +40,8 @@ class ApiCrudRenderer extends AbstractRenderer
         private DoctrineHelper $doctrineHelper,
         private EntityAttributeWriter $entityAttributeWriter,
         private RepositoryMethodWriter $repositoryMethodWriter,
+        private RateLimiterConfigWriter $rateLimiterConfigWriter,
+        private PermissionManifestWriter $permissionManifestWriter,
         private FileManager $fileManager,
     ) {
         parent::__construct($bag);
@@ -169,6 +173,10 @@ class ApiCrudRenderer extends AbstractRenderer
         );
 
         $repositoryMethodError = $this->tryWriteRepositoryExportMethod($generator, $repositoryClassDetails, $sharedVars);
+        $rateLimiterError = $this->tryWriteRateLimiterConfig($generator, $sharedVars['export_limiter_name']);
+        $permissionManifestError = $withAccessControl
+            ? $this->tryWritePermissionManifest($generator, $permissionPrefix, ucfirst($entityVar), ucfirst($sharedVars['entities_var']))
+            : null;
 
         if ($withTests) {
             $testClassDetails = $generator->createClassNameDetails($entityClassDetails->getRelativeNameWithoutSuffix().'ServiceTest', 'Tests\\Unit\\Service\\', 'ServiceTest');
@@ -216,6 +224,8 @@ class ApiCrudRenderer extends AbstractRenderer
             $repositoryClassDetails->getShortName(),
             $sharedVars['export_method_name'],
             $repositoryMethodError,
+            $rateLimiterError,
+            $permissionManifestError,
         ));
     }
 
@@ -322,6 +332,93 @@ class ApiCrudRenderer extends AbstractRenderer
         }
 
         $generator->dumpFile($path, $newSourceCode);
+
+        return null;
+    }
+
+    /**
+     * Attempts to add a `framework.rate_limiter.<limiterName>` entry directly to an EXISTING
+     * `config/packages/framework.yaml` via {@see RateLimiterConfigWriter}. Returns null on
+     * success (including the idempotent "already there" case — the writer returns the source
+     * unchanged and nothing is written), or a human-readable reason on failure (file missing,
+     * or `framework:` key not found) — callers fall back to printing the manual paste-in-by-hand
+     * instructions in that case, same resilience pattern as {@see tryWriteEntityAttributes}.
+     */
+    private function tryWriteRateLimiterConfig(Generator $generator, string $limiterName): ?string
+    {
+        $path = $generator->getRootDirectory().'/config/packages/framework.yaml';
+        if (!is_file($path)) {
+            return sprintf('"%s" tidak ditemukan.', $path);
+        }
+
+        $sourceCode = file_get_contents($path);
+        if (false === $sourceCode) {
+            return sprintf('Could not read "%s".', $path);
+        }
+
+        try {
+            $newSourceCode = $this->rateLimiterConfigWriter->addLimiter($sourceCode, $limiterName, 'fixed_window', 5, '1 minute');
+        } catch (\RuntimeException $e) {
+            return $e->getMessage();
+        }
+
+        if ($newSourceCode !== $sourceCode) {
+            $generator->dumpFile($path, $newSourceCode);
+        }
+
+        return null;
+    }
+
+    /**
+     * Attempts to add or complete the permission item (`gated: true` + the standard CRUD/export
+     * `actions`) for this resource directly in an EXISTING `config/permissions/default.yaml`
+     * via {@see PermissionManifestWriter}. New items land in the "Master" section (created if
+     * it doesn't exist yet); an existing item only gets its missing pieces filled in — existing
+     * fields (including custom action labels) are left untouched. Returns null on success
+     * (including the idempotent "already gated and complete" case), or a human-readable reason
+     * on failure (file missing, or manifest structure not recognized) — callers fall back to
+     * printing the manual paste-in-by-hand instructions in that case, same resilience pattern
+     * as {@see tryWriteEntityAttributes}.
+     */
+    private function tryWritePermissionManifest(Generator $generator, string $permissionPrefix, string $entityLabel, string $entitiesLabel): ?string
+    {
+        $path = $generator->getRootDirectory().'/config/permissions/default.yaml';
+        if (!is_file($path)) {
+            return sprintf('"%s" tidak ditemukan.', $path);
+        }
+
+        $sourceCode = file_get_contents($path);
+        if (false === $sourceCode) {
+            return sprintf('Could not read "%s".', $path);
+        }
+
+        $actions = [
+            'create' => 'Create '.$entityLabel,
+            'edit' => 'Edit '.$entityLabel,
+            'delete' => 'Delete '.$entityLabel,
+            'bulk_delete' => 'Bulk Delete',
+            'export_selected' => 'Export Selected',
+            'export_all' => 'Export All',
+        ];
+
+        try {
+            $newSourceCode = $this->permissionManifestWriter->addOrUpdateItem(
+                $sourceCode,
+                'Master',
+                $permissionPrefix,
+                $entitiesLabel,
+                '/dashboard/'.$permissionPrefix,
+                'bi-list',
+                ['ROLE_USER'],
+                $actions,
+            );
+        } catch (\RuntimeException $e) {
+            return $e->getMessage();
+        }
+
+        if ($newSourceCode !== $sourceCode) {
+            $generator->dumpFile($path, $newSourceCode);
+        }
 
         return null;
     }
@@ -641,6 +738,8 @@ class ApiCrudRenderer extends AbstractRenderer
         string $repositoryClassName,
         string $exportMethodName,
         ?string $repositoryMethodError,
+        ?string $rateLimiterError,
+        ?string $permissionManifestError,
     ): array {
         if ($attributesWritten) {
             $steps = [
@@ -667,9 +766,13 @@ class ApiCrudRenderer extends AbstractRenderer
         }
 
         if ($withAccessControl) {
-            $steps[] = 'Tambahkan permission key ke config/permissions/default.yaml (kematjaya/access-control-bundle):';
-            $steps[] = '    gated: true, actions: { create: ..., edit: ..., delete: ..., bulk_delete: ..., export_all: ..., export_selected: ... } dengan prefix "'.$permissionPrefix.'"';
-            $steps[] = '    (bulk_delete & export_selected murni dipakai untuk gating tombol di frontend, tidak ada endpoint backend terpisah untuk itu)';
+            if (null === $permissionManifestError) {
+                $steps[] = 'Permission key "'.$permissionPrefix.'" (gated: true, actions: create/edit/delete/bulk_delete/export_selected/export_all) sudah ditambahkan/dilengkapi otomatis di config/permissions/default.yaml — cek diff-nya sebelum commit (item baru dapat href/icon placeholder, sesuaikan manual).';
+            } else {
+                $steps[] = 'Tidak bisa menambahkan/melengkapi permission key otomatis ke config/permissions/default.yaml ('.$permissionManifestError.') — tambahkan manual:';
+                $steps[] = '    gated: true, actions: { create: ..., edit: ..., delete: ..., bulk_delete: ..., export_all: ..., export_selected: ... } dengan prefix "'.$permissionPrefix.'"';
+            }
+            $steps[] = '(bulk_delete & export_selected murni dipakai untuk gating tombol di frontend, tidak ada endpoint backend terpisah untuk itu)';
             $steps[] = 'Lalu jalankan: bin/console kematjaya:access-control:sync';
             $steps[] = '';
         }
@@ -681,13 +784,17 @@ class ApiCrudRenderer extends AbstractRenderer
             $steps[] = 'Tidak bisa menambahkan '.$exportMethodName.'() otomatis ke '.$repositoryClassName.' ('.$repositoryMethodError.') — tambahkan method itu manual, lihat isi '.$entityClassDetails->getShortName().'ExportDataController untuk signature yang dipanggil.';
         }
         $steps[] = '';
-        $steps[] = 'Tambahkan rate limiter untuk export ke config/packages/framework.yaml:';
-        $steps[] = '';
-        $steps[] = '    rate_limiter:';
-        $steps[] = '        '.$exportLimiterName.':';
-        $steps[] = '            policy: fixed_window';
-        $steps[] = '            limit: 5';
-        $steps[] = "            interval: '1 minute'";
+        if (null === $rateLimiterError) {
+            $steps[] = 'Rate limiter "'.$exportLimiterName.'" sudah ditambahkan/sudah ada otomatis di config/packages/framework.yaml — cek diff-nya sebelum commit.';
+        } else {
+            $steps[] = 'Tidak bisa menambahkan rate limiter otomatis ke config/packages/framework.yaml ('.$rateLimiterError.') — tambahkan manual:';
+            $steps[] = '';
+            $steps[] = '    rate_limiter:';
+            $steps[] = '        '.$exportLimiterName.':';
+            $steps[] = '            policy: fixed_window';
+            $steps[] = '            limit: 5';
+            $steps[] = "            interval: '1 minute'";
+        }
         $steps[] = '';
         $steps[] = 'Cek Service yang di-generate — constructor/update() entity diasumsikan urutan parameter sama dengan urutan field Doctrine metadata; sesuaikan manual kalau beda.';
         $steps[] = 'Field bertipe date/datetime otomatis di-skip dari Input DTO — tambahkan manual kalau memang perlu jadi input user.';
