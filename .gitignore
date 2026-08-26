@@ -3,6 +3,8 @@
 /var/
 composer.lock
 .idea
+.DS_Store
+/config/reference.php
 
 # Artifacts left behind if a test crashes before its own cleanup runs
 # (ApiCrudMakerTest / CrudMakerBundleTest generate into these paths).

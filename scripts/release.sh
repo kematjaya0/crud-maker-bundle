@@ -62,9 +62,9 @@ if [[ "$current_branch" != "$RELEASE_BRANCH" ]]; then
     exit 1
 fi
 
-if [[ -n "$(git status --porcelain)" ]]; then
-    echo "error: working tree is not clean — commit or stash your changes first" >&2
-    git status --short
+if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+    echo "error: working tree has uncommitted changes — commit or stash them first" >&2
+    git status --short --untracked-files=no
     exit 1
 fi
 
