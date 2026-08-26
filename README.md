@@ -12,7 +12,13 @@ export, form, BFF proxy routes).
 ### 1. Install
 
 ```
-composer require --dev kematjaya/crud-maker-bundle
+composer require --dev kematjaya/crud-maker-api-bundle
+```
+
+Register the bundle in `config/bundles.php`:
+
+```php
+Kematjaya\CrudMakerBundle\Api\CrudMakerApiBundle::class => ['all' => true],
 ```
 
 ### 2. Have an entity
@@ -91,8 +97,15 @@ Older, server-rendered (Symfony Form + Twig + Bootstrap) generator — a separat
 
 1. installation
 ```
-composer require kematjaya/crud-maker-bundle
+composer require kematjaya/crud-maker-twig-bundle
 ```
+
+Register the bundle in `config/bundles.php`:
+
+```php
+Kematjaya\CrudMakerBundle\Twig\CrudMakerTwigBundle::class => ['all' => true],
+```
+
 2. Generate Filter Form
 ```
 php bin/console make:kmj-filter
@@ -116,11 +129,25 @@ and add jquery.js
 ```
 # config/packages/crud_generator.yaml
 # assume your template in root-project/generator
-crud_maker:
+crud_maker_twig:
     templates:
         path: '%kernel.project_dir%/generator'
 
 ```
+
+(`make:kmj-api-crud`'s templates are overridden the same way, under the `crud_maker_api` key instead.)
+
+## Package layout
+
+This repo is a monorepo of three composer packages, split by dependency (Twig+Form vs. API
+Platform+Next.js don't need each other's stack) — see `packages/`:
+
+- [`kematjaya/crud-maker-core`](packages/crud-maker-core) — shared renderer base class, no Symfony bundle of its own.
+- [`kematjaya/crud-maker-twig-bundle`](packages/crud-maker-twig-bundle) — `make:kmj-crud` / `make:kmj-filter` (this section).
+- [`kematjaya/crud-maker-api-bundle`](packages/crud-maker-api-bundle) — `make:kmj-api-crud` (the section above).
+
+`composer require kematjaya/crud-maker-bundle` (this root package) still works and pulls in both
+flavors, for backward compatibility — new projects should require only the flavor they need.
 thank to:
 - Filter type provide by https://github.com/lexik/LexikFormFilterBundle
 - pagination provide by https://github.com/KnpLabs/KnpPaginatorBundle

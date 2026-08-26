@@ -4,7 +4,7 @@ services:
         autoconfigure: true
     
     filter_type_renderer:
-        alias: Kematjaya\CrudMakerBundle\Renderer\FilterTypeRenderer
+        alias: Kematjaya\CrudMakerBundle\Twig\Renderer\FilterTypeRenderer
         public: true
         
     generator:
@@ -21,8 +21,8 @@ services:
             - 'Kematjaya\CrudMakerBundle\Tests\Entity'
             - '@doctrine'
 
-    Kematjaya\CrudMakerBundle\Renderer\ApiCrudRenderer:
+    Kematjaya\CrudMakerBundle\Api\Renderer\ApiCrudRenderer:
         public: true
 
-    Kematjaya\CrudMakerBundle\Maker\ApiCrudMaker:
+    Kematjaya\CrudMakerBundle\Api\Maker\ApiCrudMaker:
         public: true

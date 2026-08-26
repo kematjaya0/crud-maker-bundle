@@ -1,7 +1,7 @@
 {
     "name": "kematjaya/crud-maker-bundle",
-    "description": "crud generator base on symfony maker-bundle",
-    "type": "library",
+    "description": "Umbrella package for kematjaya/crud-maker-twig-bundle and kematjaya/crud-maker-api-bundle (BC convenience: pulls in both flavors, same as before the package split). New projects should require only the flavor they need.",
+    "type": "metapackage",
     "license": "MIT",
     "authors": [
         {
@@ -9,25 +9,17 @@
             "email": "kematjaya0@gmail.com"
         }
     ],
+    "repositories": [
+        {
+            "type": "path",
+            "url": "packages/*"
+        }
+    ],
     "require": {
-	"symfony/http-kernel": "^7.0|^8.0",
-        "symfony/dependency-injection": "^7.0|^8.0",
-        "symfony/config": "^7.0|^8.0",
-        "symfony/console": "^7.0|^8.0",
-        "symfony/routing": "^7.0|^8.0",
-        "symfony/validator": "^7.0|^8.0",
-        "symfony/http-foundation": "^7.0|^8.0",
-        "symfony/translation": "^7.0|^8.0",
-        "symfony/yaml": "^7.0|^8.0",
-        "doctrine/orm": "^3.5",
-        "symfony/maker-bundle": "^1.60",
-        "symfony/twig-bundle": "^7.0|^8.0",
-        "kematjaya/base-controller-bundle": "^8.0",
-        "doctrine/doctrine-bundle": "^3.2",
-        "symfony/form": "^7.0|^8.0",
-        "symfony/security-csrf": "^7.0|^8.0",
-        "kematjaya/url-bundle": "^7.0|^8.0",
-        "nikic/php-parser": "^5.0"
+        "php": ">=8.2",
+        "kematjaya/crud-maker-core": "@dev",
+        "kematjaya/crud-maker-twig-bundle": "@dev",
+        "kematjaya/crud-maker-api-bundle": "@dev"
     },
     "require-dev": {
         "phpunit/phpunit": "^12.0",
@@ -47,14 +39,11 @@
         "phpstan": "Runs PHPStan static analysis",
         "phpstan-baseline": "Generates PHPStan baseline for current errors"
     },
-    "autoload": {
-        "psr-4": {
-            "Kematjaya\\CrudMakerBundle\\": "src/"
-        }
-    },
     "autoload-dev": {
         "psr-4": {
             "Kematjaya\\CrudMakerBundle\\Tests\\": "tests/"
         }
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

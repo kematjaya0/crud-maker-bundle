@@ -1,0 +1,35 @@
+{
+    "name": "kematjaya/crud-maker-twig-bundle",
+    "description": "Symfony MakerBundle command that generates Twig+Form CRUD (controller, views, filter type) for an existing Doctrine entity",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nur Hidayatullah",
+            "email": "kematjaya0@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "kematjaya/crud-maker-core": "^1.0",
+        "symfony/http-kernel": "^7.0|^8.0",
+        "symfony/dependency-injection": "^7.0|^8.0",
+        "symfony/config": "^7.0|^8.0",
+        "symfony/console": "^7.0|^8.0",
+        "symfony/routing": "^7.0|^8.0",
+        "symfony/validator": "^7.0|^8.0",
+        "symfony/twig-bundle": "^7.0|^8.0",
+        "symfony/form": "^7.0|^8.0",
+        "symfony/security-csrf": "^7.0|^8.0",
+        "doctrine/orm": "^3.5",
+        "doctrine/doctrine-bundle": "^3.2",
+        "symfony/maker-bundle": "^1.60",
+        "kematjaya/base-controller-bundle": "^8.0",
+        "kematjaya/url-bundle": "^7.0|^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Kematjaya\\CrudMakerBundle\\Twig\\": "src/"
+        }
+    }
+}

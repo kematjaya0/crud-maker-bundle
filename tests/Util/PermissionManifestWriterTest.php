@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kematjaya\CrudMakerBundle\Tests\Util;
 
-use Kematjaya\CrudMakerBundle\Util\PermissionManifestWriter;
+use Kematjaya\CrudMakerBundle\Api\Util\PermissionManifestWriter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Yaml;
 

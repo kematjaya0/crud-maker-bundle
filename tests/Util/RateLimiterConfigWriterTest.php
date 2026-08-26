@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kematjaya\CrudMakerBundle\Tests\Util;
 
-use Kematjaya\CrudMakerBundle\Util\RateLimiterConfigWriter;
+use Kematjaya\CrudMakerBundle\Api\Util\RateLimiterConfigWriter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Yaml;
 

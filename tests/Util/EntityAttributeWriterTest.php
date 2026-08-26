@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kematjaya\CrudMakerBundle\Tests\Util;
 
-use Kematjaya\CrudMakerBundle\Util\EntityAttributeWriter;
+use Kematjaya\CrudMakerBundle\Api\Util\EntityAttributeWriter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 

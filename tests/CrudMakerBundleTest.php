@@ -2,7 +2,7 @@
 
 namespace Kematjaya\CrudMakerBundle\Tests;
 
-use Kematjaya\CrudMakerBundle\Maker\FilterMaker;
+use Kematjaya\CrudMakerBundle\Twig\Maker\FilterMaker;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Depends;
 use Symfony\Component\DependencyInjection\ContainerInterface;

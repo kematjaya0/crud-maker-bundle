@@ -4,6 +4,9 @@ includes:
 parameters:
     level: 6
     paths:
-        - src/
+        - packages/crud-maker-core/src/
+        - packages/crud-maker-twig-bundle/src/
+        - packages/crud-maker-api-bundle/src/
     excludePaths:
-        - src/Resources/skeleton/
+        - packages/crud-maker-twig-bundle/src/Resources/skeleton/
+        - packages/crud-maker-api-bundle/src/Resources/skeleton/

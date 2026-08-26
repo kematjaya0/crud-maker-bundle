@@ -2,7 +2,7 @@
 
 namespace Kematjaya\CrudMakerBundle\Tests;
 
-use Kematjaya\CrudMakerBundle\Maker\ApiCrudMaker;
+use Kematjaya\CrudMakerBundle\Api\Maker\ApiCrudMaker;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
@@ -33,11 +33,11 @@ final class ApiCrudMakerTest extends WebTestCase
 
     /**
      * `make:kmj-api-crud` injects an export-query method into the entity's EXISTING repository
-     * file (see {@see \Kematjaya\CrudMakerBundle\Util\RepositoryMethodWriter}), and — on the
+     * file (see {@see \Kematjaya\CrudMakerBundle\Api\Util\RepositoryMethodWriter}), and — on the
      * same resilience/idempotency pattern — a rate limiter into config/packages/framework.yaml
      * and a permission item into config/permissions/default.yaml (see
-     * {@see \Kematjaya\CrudMakerBundle\Util\RateLimiterConfigWriter} and
-     * {@see \Kematjaya\CrudMakerBundle\Util\PermissionManifestWriter}). Unlike the files
+     * {@see \Kematjaya\CrudMakerBundle\Api\Util\RateLimiterConfigWriter} and
+     * {@see \Kematjaya\CrudMakerBundle\Api\Util\PermissionManifestWriter}). Unlike the files
      * tracked in $generatedFiles, these must be restored rather than deleted, otherwise a
      * second test run collides with the already-injected content.
      *
@@ -102,7 +102,7 @@ final class ApiCrudMakerTest extends WebTestCase
         $container = static::$kernel->getContainer();
 
         $maker = new ApiCrudMaker(
-            $container->get(\Kematjaya\CrudMakerBundle\Renderer\ApiCrudRenderer::class),
+            $container->get(\Kematjaya\CrudMakerBundle\Api\Renderer\ApiCrudRenderer::class),
             $container->get(\Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper::class),
         );
 

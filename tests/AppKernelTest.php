@@ -4,7 +4,8 @@ namespace Kematjaya\CrudMakerBundle\Tests;
 
 use Symfony\Bundle\TwigBundle\TwigBundle;
 use Symfony\Bundle\MakerBundle\MakerBundle;
-use Kematjaya\CrudMakerBundle\CrudMakerBundle;
+use Kematjaya\CrudMakerBundle\Twig\CrudMakerTwigBundle;
+use Kematjaya\CrudMakerBundle\Api\CrudMakerApiBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Symfony\Component\HttpKernel\Kernel;
@@ -21,7 +22,8 @@ class AppKernelTest extends Kernel
         return [
             new TwigBundle(),
             //new MakerBundle(),
-            new CrudMakerBundle(),
+            new CrudMakerTwigBundle(),
+            new CrudMakerApiBundle(),
             new FrameworkBundle(),
             new DoctrineBundle(),
         ];
