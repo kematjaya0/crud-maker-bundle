@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d095c9465a9836eddae1a06f2133fa68",
+    "content-hash": "cdb76414f72f58f1eadb0312ba106743",
     "packages": [
         {
             "name": "doctrine/collections",
@@ -1179,7 +1179,7 @@
             "dist": {
                 "type": "path",
                 "url": "packages/crud-maker-api-bundle",
-                "reference": "b670f5acffe73f2f793dfb23183cef2757d446fc"
+                "reference": "502d9703d0f6f1827745633ceaaafc9804fd4b8e"
             },
             "require": {
                 "doctrine/doctrine-bundle": "^3.2",
@@ -1199,6 +1199,11 @@
                 "symfony/yaml": "^7.0|^8.0"
             },
             "type": "symfony-bundle",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "Kematjaya\\CrudMakerBundle\\Api\\": "src/"
@@ -1220,17 +1225,22 @@
         },
         {
             "name": "kematjaya/crud-maker-core",
-            "version": "1.0.0",
+            "version": "dev-master",
             "dist": {
                 "type": "path",
                 "url": "packages/crud-maker-core",
-                "reference": "603d6d58c2da02925d4bedd70cabdeddcc239241"
+                "reference": "82ddc1399b77de351b127f1275ceeca80e03fde7"
             },
             "require": {
                 "doctrine/inflector": "^2.0",
                 "php": ">=8.2"
             },
             "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "Kematjaya\\CrudMakerBundle\\Renderer\\": "src/Renderer/"
@@ -1256,7 +1266,7 @@
             "dist": {
                 "type": "path",
                 "url": "packages/crud-maker-twig-bundle",
-                "reference": "94a4e898c43a7095682972335a0b0bb310a0574f"
+                "reference": "80ba9611a3c57eeb9f43f100aa6c3effb93dece4"
             },
             "require": {
                 "doctrine/doctrine-bundle": "^3.2",
@@ -1277,6 +1287,11 @@
                 "symfony/validator": "^7.0|^8.0"
             },
             "type": "symfony-bundle",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "Kematjaya\\CrudMakerBundle\\Twig\\": "src/"
@@ -8197,11 +8212,7 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {
-        "kematjaya/crud-maker-api-bundle": 20,
-        "kematjaya/crud-maker-core": 20,
-        "kematjaya/crud-maker-twig-bundle": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

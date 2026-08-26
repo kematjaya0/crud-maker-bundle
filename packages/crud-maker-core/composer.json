@@ -2,7 +2,6 @@
     "name": "kematjaya/crud-maker-core",
     "description": "Shared renderer base class used by kematjaya/crud-maker-twig-bundle and kematjaya/crud-maker-api-bundle",
     "type": "library",
-    "version": "1.0.0",
     "license": "MIT",
     "authors": [
         {
@@ -17,6 +16,11 @@
     "autoload": {
         "psr-4": {
             "Kematjaya\\CrudMakerBundle\\Renderer\\": "src/Renderer/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
         }
     }
 }

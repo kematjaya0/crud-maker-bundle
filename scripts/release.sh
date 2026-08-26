@@ -1,21 +1,30 @@
 #!/usr/bin/env bash
 #
-# Lockstep release: tags the monorepo, then subtree-splits each packages/* into
-# its own mirror repo and pushes the SAME tag there, so kematjaya/crud-maker-core,
-# kematjaya/crud-maker-twig-bundle and kematjaya/crud-maker-api-bundle all publish
-# the same version number on Packagist.
+# Lockstep release for the THREE SPLIT PACKAGES ONLY (core, twig-bundle,
+# api-bundle): subtree-splits each packages/* into its own mirror repo and
+# pushes the SAME tag to all three, so they always publish matching versions
+# on Packagist and their `^1.0`-style require-each-other constraints stay
+# meaningful.
+#
+# This does NOT tag the umbrella/root repo (kematjaya/crud-maker-bundle,
+# this repo's own `origin`). That package has its own pre-existing version
+# history (7.x/8.x, predating the split) and is versioned independently —
+# bump and tag it manually, on its own track, only when its own composer.json
+# require-ranges actually change:
+#
+#   git tag 8.5.0 && git push origin 8.5.0
 #
 # Usage:
 #   scripts/release.sh v1.2.0            # do it for real
 #   scripts/release.sh v1.2.0 --dry-run  # print every command without pushing anything
 #
-# Requirements: clean working tree, on the release branch, tag not already used.
+# Requirements: clean working tree, on the release branch, tag not already
+# used on any of the three mirror repos.
 # Written for plain bash 3.2 (macOS default) — no associative arrays.
 
 set -euo pipefail
 
 # --- config: local package path -> mirror repo URL (parallel arrays) ---------
-# Edit this once the mirror repos exist on GitHub (see README "Package layout").
 PACKAGE_PATHS=(
     "packages/crud-maker-core"
     "packages/crud-maker-twig-bundle"
@@ -68,30 +77,24 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
     exit 1
 fi
 
-if git rev-parse "$VERSION" >/dev/null 2>&1; then
-    echo "error: tag $VERSION already exists locally" >&2
-    exit 1
-fi
-
-if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q "$VERSION"; then
-    echo "error: tag $VERSION already exists on origin" >&2
-    exit 1
-fi
-
 if [[ ${#PACKAGE_PATHS[@]} -ne ${#PACKAGE_URLS[@]} ]]; then
     echo "error: PACKAGE_PATHS and PACKAGE_URLS are out of sync — check the config block" >&2
     exit 1
 fi
 
-echo "=== releasing $VERSION (dry-run: $DRY_RUN) ==="
+echo "--- 0/2: checking $VERSION isn't already tagged on any mirror ---"
+for i in "${!PACKAGE_URLS[@]}"; do
+    url="${PACKAGE_URLS[$i]}"
+    if git ls-remote --tags "$url" "refs/tags/$VERSION" | grep -q "$VERSION"; then
+        echo "error: tag $VERSION already exists on $url" >&2
+        exit 1
+    fi
+done
+
+echo "=== releasing $VERSION for crud-maker-core / -twig-bundle / -api-bundle (dry-run: $DRY_RUN) ==="
 
 echo
-echo "--- 1/3: tagging monorepo ---"
-run git tag "$VERSION"
-run git push origin "$VERSION"
-
-echo
-echo "--- 2/3: subtree-split + push each package ---"
+echo "--- 1/2: subtree-split + push each package ---"
 for i in "${!PACKAGE_PATHS[@]}"; do
     path="${PACKAGE_PATHS[$i]}"
     url="${PACKAGE_URLS[$i]}"
@@ -113,11 +116,16 @@ for i in "${!PACKAGE_PATHS[@]}"; do
 done
 
 echo
-echo "--- 3/3: done ---"
-echo "Tag $VERSION pushed to origin and to:"
+echo "--- 2/2: done ---"
+echo "Tag $VERSION pushed to:"
 for i in "${!PACKAGE_URLS[@]}"; do
     echo "  - ${PACKAGE_URLS[$i]}"
 done
 echo
 echo "Packagist should pick up the new tag on each mirror repo automatically"
 echo "(via its GitHub webhook) and publish version ${VERSION#v} for each package."
+echo
+echo "Reminder: the umbrella repo (origin, kematjaya/crud-maker-bundle) is NOT"
+echo "touched by this script — it's on its own 7.x/8.x version track. Tag it"
+echo "manually if its own composer.json require-ranges changed:"
+echo "  git tag <next-8.x-version> && git push origin <next-8.x-version>"

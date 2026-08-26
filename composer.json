@@ -17,9 +17,9 @@
     ],
     "require": {
         "php": ">=8.2",
-        "kematjaya/crud-maker-core": "@dev",
-        "kematjaya/crud-maker-twig-bundle": "@dev",
-        "kematjaya/crud-maker-api-bundle": "@dev"
+        "kematjaya/crud-maker-core": "^1.0",
+        "kematjaya/crud-maker-twig-bundle": "^1.0",
+        "kematjaya/crud-maker-api-bundle": "^1.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^12.0",
