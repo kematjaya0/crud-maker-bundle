@@ -30,6 +30,41 @@ Versioning: the umbrella package above is on its own version track (continuing i
 7.x/8.x history); the three `packages/*` are versioned independently from each other's shared
 `v1.x` track. See `scripts/release.sh` for the release process.
 
+## Rilis / update tag
+
+Ada dua jalur versioning yang terpisah, jadi cara tag-nya juga beda:
+
+### Tiga package hasil split (`packages/*`)
+
+`scripts/release.sh` men-subtree-split tiap package di `packages/` lalu push tag yang **sama**
+ke ketiga mirror repo-nya sekaligus (core, twig-bundle, api-bundle), supaya versi yang tayang di
+Packagist selalu match satu sama lain.
+
+Syarat sebelum jalan: working tree bersih (commit/stash dulu perubahan), dan posisi di branch
+`master`.
+
+```bash
+# jalankan dulu dengan --dry-run untuk lihat command apa saja yang akan dieksekusi
+scripts/release.sh v1.2.0 --dry-run
+
+# baru jalankan beneran kalau sudah yakin
+scripts/release.sh v1.2.0
+```
+
+Format versi wajib `vX.Y.Z`. Script otomatis berhenti kalau tag tersebut sudah pernah dipakai di
+salah satu mirror repo.
+
+### Package umbrella (root repo ini)
+
+Repo root (`kematjaya/crud-maker-bundle`, remote `origin`) **tidak** disentuh oleh
+`scripts/release.sh` — dia punya track versi sendiri (lanjutan 7.x/8.x sebelum split). Tag manual
+saja, hanya kalau `composer.json` di root ini memang berubah require-range-nya:
+
+```bash
+git tag 8.5.0
+git push origin 8.5.0
+```
+
 ## Credits
 
 - Filter type provided by [LexikFormFilterBundle](https://github.com/lexik/LexikFormFilterBundle) / [SpiriitLabs](https://github.com/spiriitlabs/form-filter-bundle)
