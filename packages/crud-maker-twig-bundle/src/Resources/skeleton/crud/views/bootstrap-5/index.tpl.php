@@ -3,6 +3,9 @@
 {% block title %}{{ '<?= strtolower($entity_class_name) ?>'|trans }}{% endblock %}
 
 {% block actions %}
+    <span class="text-muted small me-1 d-none d-sm-inline">
+        {{ <?= $entity_twig_var_plural ?>.totalItemCount }} {{ 'data'|trans }}
+    </span>
 <?php if ($use_filter): ?>
     <button class="btn btn-sm btn-outline-secondary" type="button" id="filter-open" data-bs-toggle="collapse" data-bs-target="#filter" aria-expanded="false" aria-controls="filter">
         <span class="fa fa-filter"></span> {{ 'filter'|trans }}
@@ -99,28 +102,33 @@
 {% block javascripts %}
     {{ parent() }}
     <script>
-        const filterEl = document.getElementById('filter');
-        const filterOpenBtn = document.getElementById('filter-open');
 
-        if (filterEl && filterOpenBtn) {
-            filterEl.addEventListener('shown.bs.collapse', function () {
-                filterOpenBtn.classList.add('d-none');
-            });
+        document.addEventListener('DOMContentLoaded', function () {
+            const filterEl = document.getElementById('filter');
+            const filterOpenBtn = document.getElementById('filter-open');
 
-            filterEl.addEventListener('hidden.bs.collapse', function () {
-                filterOpenBtn.classList.remove('d-none');
-            });
-        }
+            if (filterEl && filterOpenBtn) {
+                filterEl.addEventListener('shown.bs.collapse', function () {
+                    filterOpenBtn.classList.add('d-none');
+                });
 
-        const bulkForm = document.getElementById('bulk-form');
-        const selectAllEl = document.getElementById('bulk-select-all');
-        const rowCheckboxes = document.querySelectorAll('.bulk-row-checkbox');
-        const applyBtn = document.getElementById('bulk-apply');
-        const executionEl = document.getElementById('bulk-execution');
-        const selectedCountEl = document.getElementById('bulk-selected-count');
+                filterEl.addEventListener('hidden.bs.collapse', function () {
+                    filterOpenBtn.classList.remove('d-none');
+                });
+            }
 
-        if (bulkForm && applyBtn && executionEl && selectedCountEl) {
-            const updateBulkState = function () {
+            const bulkForm = document.getElementById('bulk-form');
+            const selectAllEl = document.getElementById('bulk-select-all');
+            const rowCheckboxes = document.querySelectorAll('.bulk-row-checkbox');
+            const applyBtn = document.getElementById('bulk-apply');
+            const executionEl = document.getElementById('bulk-execution');
+            const selectedCountEl = document.getElementById('bulk-selected-count');
+
+            if (!bulkForm || !applyBtn || !executionEl || !selectedCountEl) {
+                return;
+            }
+
+            function updateBulkState() {
                 const checked = document.querySelectorAll('.bulk-row-checkbox:checked');
                 const isReady = checked.length > 0 && executionEl.value !== '';
 
@@ -133,7 +141,7 @@
                     selectAllEl.checked = rowCheckboxes.length > 0 && checked.length === rowCheckboxes.length;
                     selectAllEl.indeterminate = checked.length > 0 && checked.length < rowCheckboxes.length;
                 }
-            };
+            }
 
             if (selectAllEl) {
                 selectAllEl.addEventListener('change', function () {
@@ -162,6 +170,7 @@
                 if (executionEl.value === 'export') {
                     // CSV download: bypass Turbo so the browser handles this as a real
                     // navigation and honors the Content-Disposition: attachment header.
+                    // Submitted via fetch, Turbo would swallow the file response silently.
                     bulkForm.setAttribute('data-turbo', 'false');
                     window.setTimeout(function () {
                         bulkForm.removeAttribute('data-turbo');
@@ -170,6 +179,7 @@
             });
 
             updateBulkState();
-        }
+        });
+
     </script>
 {% endblock %}

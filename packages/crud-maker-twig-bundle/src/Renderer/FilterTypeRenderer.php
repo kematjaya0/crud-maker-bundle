@@ -44,19 +44,14 @@ final class FilterTypeRenderer extends AbstractRenderer
      */
     public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ?ClassNameDetails $boundClassDetails = null, ?string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = [], array $doctrineFieldTypes = []): string
     {
-        $extraUseStatements = [];
         $fields = [];
         foreach ($formFields as $name => $fieldTypeOptions) {
             if (is_array($fieldTypeOptions) && EntityType::class === ($fieldTypeOptions['type'] ?? null)) {
                 // association field (ManyToOne, OneToOne, ManyToMany, ...): filter it through the related entity
                 $fields[$name] = [
                     'type' => 'EntityFilterType',
-                    'options_code' => $fieldTypeOptions['options_code'] ?? null,
+                    'options_code' => $this->fullyQualifyEntityOptionsCode($fieldTypeOptions),
                 ];
-
-                foreach ($fieldTypeOptions['extra_use_classes'] ?? [] as $extraClass) {
-                    $extraUseStatements[] = $extraClass;
-                }
 
                 continue;
             }
@@ -64,7 +59,7 @@ final class FilterTypeRenderer extends AbstractRenderer
             $fields[$name] = $this->resolveFilterType($doctrineFieldTypes[$name] ?? null);
         }
 
-        $mergedUseStatements = array_values(array_unique(array_merge($constraintClasses, $extraUseStatements, $extraUseClasses)));
+        $mergedUseStatements = array_values(array_unique(array_merge($constraintClasses, $extraUseClasses)));
         sort($mergedUseStatements);
 
         return $generator->generateClass(
@@ -78,6 +73,31 @@ final class FilterTypeRenderer extends AbstractRenderer
                 'identifier' => $identifierField
             ]
         );
+    }
+
+    /**
+     * Symfony's own EntityDetails::getFormFields() builds the association `options_code`
+     * with an unqualified "Ns\Class::class" reference — fine in the FormType it was designed
+     * for (generated right next to a `use` import), but this filter class doesn't import the
+     * target entity, so it resolves relative to *this* class's own namespace and fatals.
+     * A leading backslash makes it resolve globally instead. That same string also already
+     * ends with its own trailing comma, which needs trimming since Type.tpl.php appends one
+     * of its own after the whole options_code block.
+     *
+     * @param array{options_code?: ?string, extra_use_classes?: array<int, string>} $fieldTypeOptions
+     */
+    private function fullyQualifyEntityOptionsCode(array $fieldTypeOptions): ?string
+    {
+        $optionsCode = $fieldTypeOptions['options_code'] ?? null;
+        if (null === $optionsCode) {
+            return null;
+        }
+
+        foreach ($fieldTypeOptions['extra_use_classes'] ?? [] as $targetEntity) {
+            $optionsCode = str_replace($targetEntity.'::class', '\\'.$targetEntity.'::class', $optionsCode);
+        }
+
+        return rtrim($optionsCode, ", \t\n\r\0\x0B");
     }
 
     /**
