@@ -8,13 +8,13 @@
     </span>
 <?php if ($use_filter): ?>
     <button class="btn btn-sm btn-outline-secondary" type="button" id="filter-open" data-bs-toggle="collapse" data-bs-target="#filter" aria-expanded="false" aria-controls="filter">
-        <span class="fa fa-filter"></span> {{ 'filter'|trans }}
+        <span class="fa fa-filter bi bi-funnel"></span> {{ 'filter'|trans }}
     </button>
 <?php endif; ?>
 <?php if ($is_modal): ?>
-    {{ link_to('<?= $route_name ?>_create', {}, {class: 'btn btn-sm btn-primary', 'data-bs-toggle': 'modal', 'data-bs-target': '#myModal', icon: '<span class="fa fa-plus"></span>', label: 'create'|trans}) }}
+    {{ link_to('<?= $route_name ?>_create', {}, {class: 'btn btn-sm btn-primary', 'data-bs-toggle': 'modal', 'data-bs-target': '#myModal', icon: '<span class="fa fa-plus bi bi-plus-lg"></span>', label: 'create'|trans}) }}
 <?php else: ?>
-    {{ link_to('<?= $route_name ?>_create', {}, {class: 'btn btn-sm btn-primary', icon: '<span class="fa fa-plus"></span>', label: 'create'|trans}) }}
+    {{ link_to('<?= $route_name ?>_create', {}, {class: 'btn btn-sm btn-primary', icon: '<span class="fa fa-plus bi bi-plus-lg"></span>', label: 'create'|trans}) }}
 <?php endif; ?>
 {% endblock %}
 
@@ -30,7 +30,7 @@
             <option value="delete">{{ 'delete'|trans }}</option>
             <option value="export">{{ 'export'|trans }}</option>
         </select>
-        <button type="submit" id="bulk-apply" class="btn btn-sm btn-outline-primary" disabled hidden>{{ 'apply'|trans }}</button>
+        <button type="submit" id="bulk-apply" class="btn btn-sm btn-outline-primary" disabled hidden><span class="fa fa-plus bi bi-check-circle"></span> {{ 'apply'|trans }}</button>
         <span id="bulk-selected-count" class="text-muted small" hidden>{{ '0 selected'|trans }}</span>
     </form>
 
@@ -69,11 +69,11 @@
                             <td class="text-nowrap">
                                 <div class="btn-group btn-group-sm" role="group" aria-label="actions">
 <?php if ($is_modal): ?>
-                                    {{ link_to('<?= $route_name ?>_show', {<?= $entity_identifier ?>: <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}, {class: 'btn btn-outline-primary', 'data-bs-toggle': 'modal', 'data-bs-target': '#myModal', icon: '<span class="fa fa-eye"></span>', label: 'view'|trans}) }}
-                                    {{ link_to('<?= $route_name ?>_edit', {<?= $entity_identifier ?>: <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}, {class: 'btn btn-outline-secondary', 'data-bs-toggle': 'modal', 'data-bs-target': '#myModal', icon: '<span class="fa fa-pen"></span>', label: 'edit'|trans}) }}
+                                    {{ link_to('<?= $route_name ?>_show', {<?= $entity_identifier ?>: <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}, {class: 'btn btn-sm btn-outline-primary', 'data-bs-toggle': 'modal', 'data-bs-target': '#myModal', icon: '<span class="fa fa-eye bi bi-eye"></span>', label: '' }) }}
+                                    {{ link_to('<?= $route_name ?>_edit', {<?= $entity_identifier ?>: <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}, {class: 'btn btn-sm btn-outline-secondary', 'data-bs-toggle': 'modal', 'data-bs-target': '#myModal', icon: '<span class="fa fa-pen bi bi-pencil-square"></span>', label: '' }) }}
 <?php else: ?>
-                                    {{ link_to('<?= $route_name ?>_show', {<?= $entity_identifier ?>: <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}, {class: 'btn btn-outline-primary', icon: '<span class="fa fa-eye"></span>', label: 'view'|trans}) }}
-                                    {{ link_to('<?= $route_name ?>_edit', {<?= $entity_identifier ?>: <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}, {class: 'btn btn-outline-secondary', icon: '<span class="fa fa-pen"></span>', label: 'edit'|trans}) }}
+                                    {{ link_to('<?= $route_name ?>_show', {<?= $entity_identifier ?>: <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}, {class: 'btn btn-sm btn-outline-primary', icon: '<span class="fa fa-eye bi bi-eye"></span>', label: '' }) }}
+                                    {{ link_to('<?= $route_name ?>_edit', {<?= $entity_identifier ?>: <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}, {class: 'btn btn-sm btn-outline-secondary', icon: '<span class="fa fa-pen bi bi-pencil-square"></span>', label: '' }) }}
 <?php endif; ?>
                                 </div>
                                 {{ include('<?= $templates_path ?>/_delete_form.html.twig', {<?= $entity_twig_var_singular ?>: <?= $entity_twig_var_singular ?>}) }}

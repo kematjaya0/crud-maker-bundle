@@ -41,8 +41,8 @@
     </div>
 
     <div class="d-flex gap-2">
-        <a class="btn btn-sm btn-outline-primary" href="{{ path('<?= $route_name ?>_index') }}"><span class="fa fa-list"></span> {{ 'back'|trans }}</a>
-        <a class="btn btn-sm btn-outline-secondary" href="{{ path('<?= $route_name ?>_edit', {'<?= $entity_identifier ?>': <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}) }}"><span class="fa fa-pen"></span> {{ 'edit'|trans }}</a>
+        <a class="btn btn-sm btn-outline-primary" href="{{ path('<?= $route_name ?>_index') }}"><span class="fa fa-list bi bi-list-columns"></span> {{ 'back'|trans }}</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ path('<?= $route_name ?>_edit', {'<?= $entity_identifier ?>': <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>}) }}"><span class="fa fa-pen bi bi-pencil-square"></span> {{ 'edit'|trans }}</a>
     </div>
 {% endblock %}
 <?php endif; ?>

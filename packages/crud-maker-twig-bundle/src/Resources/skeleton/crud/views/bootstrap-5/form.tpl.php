@@ -17,7 +17,7 @@
 
 {% block actions %}
     <button type="submit" class="btn btn-sm btn-success">
-        <span class="fa fa-save"></span> {{ 'save'|trans }}
+        <span class="fa fa-save bi bi-save"></span> {{ 'save'|trans }}
     </button>
 {% endblock %}
 <?php else: ?>
@@ -33,10 +33,10 @@
 
                 <div class="d-flex gap-2 mt-3">
                     <button type="submit" class="btn btn-sm btn-success">
-                        <span class="fa fa-save"></span> {{ 'save'|trans }}
+                        <span class="fa fa-save bi bi-save"></span> {{ 'save'|trans }}
                     </button>
                     <a class="btn btn-sm btn-outline-primary" href="{{ path('<?= $route_name ?>_index') }}">
-                        <span class="fa fa-list"></span> {{ 'back'|trans }}
+                        <span class="fa fa-list bi bi-list-columns"></span> {{ 'back'|trans }}
                     </a>
                 </div>
             {{ form_end(form) }}

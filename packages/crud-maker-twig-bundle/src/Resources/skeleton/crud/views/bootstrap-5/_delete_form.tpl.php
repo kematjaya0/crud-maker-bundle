@@ -2,6 +2,6 @@
     <input type="hidden" name="_method" value="DELETE">
     <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?>) }}">
     <button class="btn btn-sm btn-outline-danger" type="submit">
-        <span class="fa fa-trash"></span> {{ 'delete'|trans }}
+        <span class="fa fa-trash bi bi-trash3"></span>
     </button>
 </form>
