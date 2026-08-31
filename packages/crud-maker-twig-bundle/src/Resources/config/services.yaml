@@ -7,6 +7,10 @@ services:
     Kematjaya\CrudMakerBundle\Twig\Renderer\FilterTypeRenderer: ~
     Kematjaya\CrudMakerBundle\Twig\Renderer\ControllerRenderer: ~
 
+    Kematjaya\CrudMakerBundle\Twig\Formatter\CodeFormatter:
+        arguments:
+            - '%kernel.project_dir%'
+
     Kematjaya\CrudMakerBundle\Twig\Maker\FilterMaker:
         tags: ['maker.command']
 
@@ -14,6 +18,9 @@ services:
         tags: ['maker.command']
 
     Kematjaya\CrudMakerBundle\Twig\Maker\CRUDUnitTestMaker:
+        tags: ['maker.command']
+
+    Kematjaya\CrudMakerBundle\Twig\Maker\InstallMaker:
         tags: ['maker.command']
 
     Symfony\Bundle\MakerBundle\FileManager: '@maker.file_manager'

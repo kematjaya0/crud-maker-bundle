@@ -3,9 +3,9 @@
 namespace Kematjaya\CrudMakerBundle\Twig\Renderer;
 
 use Kematjaya\CrudMakerBundle\Renderer\AbstractRenderer;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
-use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 
 /**
@@ -15,6 +15,20 @@ use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
  */
 final class FilterTypeRenderer extends AbstractRenderer
 {
+    /**
+     * Doctrine DBAL types that don't need any extra filter option besides the base type.
+     *
+     * @var array<string, string>
+     */
+    private const SIMPLE_TYPE_MAP = [
+        'boolean' => 'BooleanFilterType',
+        'integer' => 'NumberFilterType',
+        'smallint' => 'NumberFilterType',
+        'bigint' => 'NumberFilterType',
+        'decimal' => 'NumberFilterType',
+        'float' => 'NumberFilterType',
+    ];
+
     public function __construct(ContainerBagInterface $bag)
     {
         $config = $bag->get('crud_maker_twig');
@@ -23,64 +37,65 @@ final class FilterTypeRenderer extends AbstractRenderer
 
     /**
      * @param array<string, mixed> $formFields
+     * @param array<string, string> $doctrineFieldTypes field name => Doctrine DBAL type (e.g. 'string', 'boolean', 'datetime_immutable')
      * @param array<int, string> $extraUseClasses
      * @param array<int, string> $constraintClasses
+     * @return string the path of the generated file, relative to the project root
      */
-    public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ?ClassNameDetails $boundClassDetails = null, ?string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = []): void
+    public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ?ClassNameDetails $boundClassDetails = null, ?string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = [], array $doctrineFieldTypes = []): string
     {
-        $fieldTypeUseStatements = [];
+        $extraUseStatements = [];
         $fields = [];
         foreach ($formFields as $name => $fieldTypeOptions) {
-            $fieldTypeOptions = ($fieldTypeOptions) ? ['type' => null, 'options_code' => null] : ['type' => 'string'];
-            
-            $fields[$name] = $this->getFieldTypeOptions($fieldTypeOptions);
-            $fieldTypeUseStatements[] = $fieldTypeOptions['type'];
+            if (is_array($fieldTypeOptions) && EntityType::class === ($fieldTypeOptions['type'] ?? null)) {
+                // association field (ManyToOne, OneToOne, ManyToMany, ...): filter it through the related entity
+                $fields[$name] = [
+                    'type' => 'EntityFilterType',
+                    'options_code' => $fieldTypeOptions['options_code'] ?? null,
+                ];
+
+                foreach ($fieldTypeOptions['extra_use_classes'] ?? [] as $extraClass) {
+                    $extraUseStatements[] = $extraClass;
+                }
+
+                continue;
+            }
+
+            $fields[$name] = $this->resolveFilterType($doctrineFieldTypes[$name] ?? null);
         }
 
-        $mergedTypeUseStatements = array_unique(array_merge($fieldTypeUseStatements, $extraUseClasses));
-        sort($mergedTypeUseStatements);
-        
-        $generator->generateClass(
+        $mergedUseStatements = array_values(array_unique(array_merge($constraintClasses, $extraUseStatements, $extraUseClasses)));
+        sort($mergedUseStatements);
+
+        return $generator->generateClass(
             $formClassDetails->getFullName(),
             $this->getPath('filter/Type.tpl.php'),
             [
                 'bounded_full_class_name' => $boundClassDetails ? $boundClassDetails->getFullName() : null,
                 'bounded_class_name' => $boundClassDetails ? $boundClassDetails->getShortName() : null,
                 'form_fields' => $fields,
-                'field_type_use_statements' => $mergedTypeUseStatements,
-                'constraint_use_statements' => $constraintClasses,
+                'constraint_use_statements' => $mergedUseStatements,
                 'identifier' => $identifierField
             ]
         );
     }
-    
+
     /**
-     * @param array<string, mixed> $fieldTypeOptions
-     * @return array<string, mixed>
+     * Maps a Doctrine DBAL column type to the matching Spiriit filter type and its options.
+     *
+     * @return array{type: string, options_code: ?string}
      */
-    protected function getFieldTypeOptions(array $fieldTypeOptions): array
+    private function resolveFilterType(?string $doctrineType): array
     {
-        if (!isset($fieldTypeOptions['type'])) {
-            return $fieldTypeOptions;
+        if (null !== $doctrineType && isset(self::SIMPLE_TYPE_MAP[$doctrineType])) {
+            return ['type' => self::SIMPLE_TYPE_MAP[$doctrineType], 'options_code' => null];
         }
-        
-        switch ($fieldTypeOptions['type']) {
-            case 'boolean':
-                $fieldTypeOptions['type'] = 'Filters\BooleanFilterType';
-                $fieldTypeOptions['options_code'] = "";
-                break;
-            case 'array':
-                $fieldTypeOptions['type'] = 'Filters\ChoiceFilterType';
-                $fieldTypeOptions['options_code'] = "'choices' => []";
-                break;
-            default:
-                $fieldTypeOptions['type'] = 'Filters\TextFilterType';
-                $fieldTypeOptions['options_code'] = "'condition_pattern' => FilterOperands::STRING_CONTAINS";
-                break;
-        }
-        
-        $fieldTypeOptions['type'] = Str::getShortClassName($fieldTypeOptions['type']);
-        
-        return $fieldTypeOptions;
+
+        return match ($doctrineType) {
+            'date', 'date_immutable' => ['type' => 'DateFilterType', 'options_code' => "'widget' => 'single_text'"],
+            'datetime', 'datetime_immutable', 'datetimetz', 'datetimetz_immutable' => ['type' => 'DateTimeFilterType', 'options_code' => "'widget' => 'single_text'"],
+            'json', 'simple_array', 'array' => ['type' => 'ChoiceFilterType', 'options_code' => "'choices' => []"],
+            default => ['type' => 'TextFilterType', 'options_code' => "'condition_pattern' => FilterOperands::STRING_CONTAINS"],
+        };
     }
 }

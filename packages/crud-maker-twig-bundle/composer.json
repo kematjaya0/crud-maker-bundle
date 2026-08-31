@@ -21,11 +21,16 @@
         "symfony/twig-bundle": "^7.0|^8.0",
         "symfony/form": "^7.0|^8.0",
         "symfony/security-csrf": "^7.0|^8.0",
+        "symfony/process": "^7.0|^8.0",
+        "symfony/yaml": "^7.0|^8.0",
         "doctrine/orm": "^3.5",
         "doctrine/doctrine-bundle": "^3.2",
         "symfony/maker-bundle": "^1.60",
         "kematjaya/base-controller-bundle": "^8.0",
         "kematjaya/url-bundle": "^7.0|^8.0"
+    },
+    "suggest": {
+        "friendsofphp/php-cs-fixer": "Auto-formats generated filter classes (controllers, filters, ...) right after they're written."
     },
     "autoload": {
         "psr-4": {

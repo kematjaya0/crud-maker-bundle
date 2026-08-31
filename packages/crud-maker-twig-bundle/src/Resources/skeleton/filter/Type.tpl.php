@@ -12,23 +12,20 @@ use Kematjaya\BaseControllerBundle\Filter\AbstractFilterType;
 
 class <?= $class_name ?> extends AbstractFilterType
 {
-
-    public function buildForm(FormBuilderInterface $builder, array $options):void
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
 <?php foreach ($form_fields as $form_field => $typeOptions): ?>
-    <?php if(!is_null($identifier) && $form_field == $identifier):?>
-        <?php continue;?>
-    <?php endif;?>
-    <?php if (null === $typeOptions['type'] && !$typeOptions['options_code']): ?>
-        ->add('<?= $form_field ?>', Filters\TextFilterType::class, ['condition_pattern' => FilterOperands::STRING_CONTAINS])
-    <?php elseif (null !== $typeOptions['type'] && !isset($typeOptions['options_code'])): ?>
-        ->add('<?= $form_field ?>', Filters\<?= $typeOptions['type'] ?>::class])
-    <?php else: ?>
-        ->add('<?= $form_field ?>', <?= $typeOptions['type'] ? ('Filters\\'.$typeOptions['type'].'::class') : 'null' ?>, [
-           <?= $typeOptions['options_code']."\n" ?>
-        ])
-    <?php endif; ?>
+<?php if (null !== $identifier && $form_field === $identifier): ?>
+<?php continue; ?>
+<?php endif; ?>
+<?php if (!empty($typeOptions['options_code'])): ?>
+            ->add('<?= $form_field ?>', Filters\<?= $typeOptions['type'] ?>::class, [
+                <?= $typeOptions['options_code'] ?>,
+            ])
+<?php else: ?>
+            ->add('<?= $form_field ?>', Filters\<?= $typeOptions['type'] ?>::class)
+<?php endif; ?>
 <?php endforeach; ?>
         ;
     }

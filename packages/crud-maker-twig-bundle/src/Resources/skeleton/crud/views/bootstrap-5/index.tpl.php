@@ -20,12 +20,26 @@
     {{ include('<?= $templates_path ?>/_filters.html.twig', {<?= $filter_name ?>: <?= $filter_name ?>}) }}
 <?php endif; ?>
 
+    <form id="bulk-form" method="post" action="{{ path('<?= $route_name ?>_bulk_execute') }}" class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_execute') }}">
+        <select name="execution" id="bulk-execution" class="form-select form-select-sm w-auto" required>
+            <option value="">{{ 'bulk_action'|trans }}</option>
+            <option value="delete">{{ 'delete'|trans }}</option>
+            <option value="export">{{ 'export'|trans }}</option>
+        </select>
+        <button type="submit" id="bulk-apply" class="btn btn-sm btn-outline-primary" disabled hidden>{{ 'apply'|trans }}</button>
+        <span id="bulk-selected-count" class="text-muted small" hidden>{{ '0 selected'|trans }}</span>
+    </form>
+
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
+                            <th style="width: 2.5rem;">
+                                <input type="checkbox" class="form-check-input" id="bulk-select-all" aria-label="{{ 'select_all'|trans }}">
+                            </th>
 <?php foreach ($entity_fields as $k => $field): ?>
 <?php if (in_array($k, $fields_skip)): ?>
 <?php continue; ?>
@@ -38,6 +52,9 @@
                     <tbody>
                     {% for <?= $entity_twig_var_singular ?> in <?= $entity_twig_var_plural ?> %}
                         <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input bulk-row-checkbox" form="bulk-form" name="ids[]" value="{{ <?= $entity_twig_var_singular ?>.<?= $entity_identifier ?> }}" aria-label="{{ 'select'|trans }}">
+                            </td>
 <?php $count = 0; ?>
 <?php foreach ($entity_fields as $k => $field): ?>
 <?php if (in_array($k, $fields_skip)): ?>
@@ -61,7 +78,7 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="<?= $count ?>" class="text-center text-muted py-4">{{ 'no_records_found'|trans }}</td>
+                            <td colspan="<?= $count + 1 ?>" class="text-center text-muted py-4">{{ 'no_records_found'|trans }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -93,6 +110,66 @@
             filterEl.addEventListener('hidden.bs.collapse', function () {
                 filterOpenBtn.classList.remove('d-none');
             });
+        }
+
+        const bulkForm = document.getElementById('bulk-form');
+        const selectAllEl = document.getElementById('bulk-select-all');
+        const rowCheckboxes = document.querySelectorAll('.bulk-row-checkbox');
+        const applyBtn = document.getElementById('bulk-apply');
+        const executionEl = document.getElementById('bulk-execution');
+        const selectedCountEl = document.getElementById('bulk-selected-count');
+
+        if (bulkForm && applyBtn && executionEl && selectedCountEl) {
+            const updateBulkState = function () {
+                const checked = document.querySelectorAll('.bulk-row-checkbox:checked');
+                const isReady = checked.length > 0 && executionEl.value !== '';
+
+                selectedCountEl.textContent = checked.length + ' {{ 'selected'|trans }}';
+                selectedCountEl.hidden = !isReady;
+                applyBtn.disabled = !isReady;
+                applyBtn.hidden = !isReady;
+
+                if (selectAllEl) {
+                    selectAllEl.checked = rowCheckboxes.length > 0 && checked.length === rowCheckboxes.length;
+                    selectAllEl.indeterminate = checked.length > 0 && checked.length < rowCheckboxes.length;
+                }
+            };
+
+            if (selectAllEl) {
+                selectAllEl.addEventListener('change', function () {
+                    rowCheckboxes.forEach(function (checkbox) {
+                        checkbox.checked = selectAllEl.checked;
+                    });
+                    updateBulkState();
+                });
+            }
+
+            rowCheckboxes.forEach(function (checkbox) {
+                checkbox.addEventListener('change', updateBulkState);
+            });
+
+            executionEl.addEventListener('change', updateBulkState);
+
+            bulkForm.addEventListener('submit', function (event) {
+                if (executionEl.value === 'delete') {
+                    const confirmed = confirm('{{ 'confirm_bulk_delete'|trans|e('js') }}');
+                    if (!confirmed) {
+                        event.preventDefault();
+                        return;
+                    }
+                }
+
+                if (executionEl.value === 'export') {
+                    // CSV download: bypass Turbo so the browser handles this as a real
+                    // navigation and honors the Content-Disposition: attachment header.
+                    bulkForm.setAttribute('data-turbo', 'false');
+                    window.setTimeout(function () {
+                        bulkForm.removeAttribute('data-turbo');
+                    }, 0);
+                }
+            });
+
+            updateBulkState();
         }
     </script>
 {% endblock %}

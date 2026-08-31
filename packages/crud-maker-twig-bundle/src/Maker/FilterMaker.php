@@ -2,6 +2,7 @@
 
 namespace Kematjaya\CrudMakerBundle\Twig\Maker;
 
+use Kematjaya\CrudMakerBundle\Twig\Formatter\CodeFormatter;
 use Kematjaya\CrudMakerBundle\Twig\Renderer\FilterTypeRenderer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -25,7 +26,7 @@ use Symfony\Bundle\MakerBundle\Util\ClassDetails;
 final class FilterMaker extends AbstractMaker
 {
     
-    public function __construct(private DoctrineHelper $entityHelper, private FilterTypeRenderer $filterTypeRenderer)
+    public function __construct(private DoctrineHelper $entityHelper, private FilterTypeRenderer $filterTypeRenderer, private CodeFormatter $codeFormatter)
     {
     }
     
@@ -70,6 +71,7 @@ final class FilterMaker extends AbstractMaker
         );
         
         $formFields = ['field_name' => null];
+        $doctrineFieldTypes = [];
 
         $boundClass = $input->getArgument('bound-class');
         $boundClassDetails = null;
@@ -85,21 +87,30 @@ final class FilterMaker extends AbstractMaker
             if (null !== $doctrineEntityDetails) {
                 $formFields = $doctrineEntityDetails->getFormFields();
                 $identifierField = $doctrineEntityDetails->getIdentifier();
+
+                foreach ($doctrineEntityDetails->getDisplayFields() as $fieldName => $fieldMapping) {
+                    $doctrineFieldTypes[$fieldName] = $fieldMapping['type'] ?? null;
+                }
             } else {
                 $classDetails = new ClassDetails($boundClassDetails->getFullName());
                 $formFields = $classDetails->getFormFields();
             }
         }
-        
-        $this->filterTypeRenderer->render(
+
+        $generatedPath = $this->filterTypeRenderer->render(
             $generator,
             $formClassNameDetails,
             $formFields,
             $boundClassDetails,
-            $identifierField
+            $identifierField,
+            [],
+            [],
+            $doctrineFieldTypes
         );
-        
+
         $generator->writeChanges();
+
+        $this->codeFormatter->format($generator->getRootDirectory() . \DIRECTORY_SEPARATOR . $generatedPath);
 
         $this->writeSuccessMessage($io);
 

@@ -3,6 +3,7 @@
 namespace Kematjaya\CrudMakerBundle\Twig\Renderer;
 
 use Kematjaya\CrudMakerBundle\Renderer\AbstractRenderer;
+use Kematjaya\CrudMakerBundle\Twig\Formatter\CodeFormatter;
 use Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
 use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
@@ -18,7 +19,21 @@ use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
  */
 class ControllerRenderer extends AbstractRenderer
 {
-    public function __construct(ContainerBagInterface $bag, private DoctrineHelper $doctrineHelper, private FilterTypeRenderer $filterTypeRenderer)
+    /**
+     * Doctrine DBAL types that don't make sense as a flat CSV column.
+     *
+     * @var array<int, string>
+     */
+    private const CSV_UNSUPPORTED_TYPES = ['array', 'simple_array', 'json', 'object', 'binary', 'blob', 'guid'];
+
+    /**
+     * Doctrine DBAL types formatted as a date/time string in CSV export.
+     *
+     * @var array<int, string>
+     */
+    private const CSV_DATE_TYPES = ['date', 'date_immutable', 'datetime', 'datetime_immutable', 'datetimetz', 'datetimetz_immutable', 'time', 'time_immutable'];
+
+    public function __construct(ContainerBagInterface $bag, private DoctrineHelper $doctrineHelper, private FilterTypeRenderer $filterTypeRenderer, private CodeFormatter $codeFormatter)
     {
         $config = $bag->get('crud_maker_twig');
         parent::__construct(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'skeleton', $config['templates']['path']);
@@ -129,7 +144,7 @@ class ControllerRenderer extends AbstractRenderer
             ],
         ];
 
-        $generator->generateController(
+        $generatedControllerPath = $generator->generateController(
             $controllerClassDetails->getFullName(),
             $this->getPath('crud/controller/Controller.tpl.php'),
             array_merge([
@@ -149,11 +164,14 @@ class ControllerRenderer extends AbstractRenderer
                     'entity_var_singular' => $entityVarSingular,
                     'entity_twig_var_singular' => $entityTwigVarSingular,
                     'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
+                    'csv_fields' => $this->buildCsvFields($entityDoctrineDetails->getDisplayFields(), $entityDoctrineDetails->getIdentifier()),
                 ],
                 $repositoryVars
             )
         );
-        
+
+        $this->codeFormatter->format($generator->getRootDirectory() . DIRECTORY_SEPARATOR . $generatedControllerPath);
+
         foreach ($templates as $template => $variables) {
             $generator->generateTemplate(
                 $templatesPath.'/'.$template.'.html.twig',
@@ -185,5 +203,56 @@ class ControllerRenderer extends AbstractRenderer
             
         
         return $controllerClassDetails;
+    }
+
+    /**
+     * Precomputes, at generation time, the label/getter/kind for each field the generated
+     * controller's CSV export should include — the same field set already shown in the
+     * index table, minus the identifier and columns that don't flatten into a CSV cell.
+     *
+     * @param array<string, mixed> $fieldMappings Doctrine field mappings, keyed by property name
+     * @return array<int, array{label: string, getter: string, kind: string}>
+     */
+    private function buildCsvFields(array $fieldMappings, string $identifierField): array
+    {
+        $fields = [];
+        foreach ($fieldMappings as $propertyName => $mapping) {
+            if ($propertyName === $identifierField) {
+                continue;
+            }
+
+            $type = $mapping['type'] ?? null;
+            if (in_array($type, self::CSV_UNSUPPORTED_TYPES, true)) {
+                continue;
+            }
+
+            $isBoolean = 'boolean' === $type;
+            $kind = $isBoolean ? 'boolean' : (in_array($type, self::CSV_DATE_TYPES, true) ? 'date' : (in_array($type, ['string', 'text'], true) ? 'string' : 'scalar'));
+
+            $fields[] = [
+                'label' => ucfirst(Str::asLowerCamelCase($propertyName)),
+                'getter' => $this->getGetterName($propertyName, $isBoolean),
+                'kind' => $kind,
+            ];
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Mirrors Symfony MakerBundle's own getter-naming convention (ClassSourceManipulator::getGetterName),
+     * so the generated CSV export calls the same accessor `make:entity` would have generated.
+     */
+    private function getGetterName(string $propertyName, bool $isBoolean): string
+    {
+        if (!$isBoolean) {
+            return 'get'.Str::asCamelCase($propertyName);
+        }
+
+        if (0 !== strncasecmp($propertyName, 'is', 2) && 0 !== strncasecmp($propertyName, 'has', 3)) {
+            return 'is'.Str::asCamelCase($propertyName);
+        }
+
+        return Str::asLowerCamelCase($propertyName);
     }
 }
