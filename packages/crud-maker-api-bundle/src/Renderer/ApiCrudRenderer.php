@@ -15,6 +15,7 @@ use Symfony\Bundle\MakerBundle\FileManager;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Generates the write-side of an API Platform CRUD (DTO, service, state processor/extension),
@@ -28,12 +29,20 @@ use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
  */
 class ApiCrudRenderer extends AbstractRenderer
 {
-    /** @var list<string> Doctrine column types treated as system-managed timestamps, excluded from the Input DTO. */
+    /** @var list<string> Doctrine column types excluded from the Input DTO (time-only columns — no `time` spec type exists on the frontend yet). */
     private const SKIPPED_TYPES = [
+        Types::TIME_MUTABLE, Types::TIME_IMMUTABLE,
+    ];
+
+    /** @var list<string> Doctrine column types treated as a "datetime" spec type — includes timezone-aware variants, excludes date-only. */
+    private const DATETIME_TYPES = [
         Types::DATETIME_MUTABLE, Types::DATETIME_IMMUTABLE,
         Types::DATETIMETZ_MUTABLE, Types::DATETIMETZ_IMMUTABLE,
+    ];
+
+    /** @var list<string> Doctrine column types treated as a "date" spec type (date-only, no time component). */
+    private const DATE_TYPES = [
         Types::DATE_MUTABLE, Types::DATE_IMMUTABLE,
-        Types::TIME_MUTABLE, Types::TIME_IMMUTABLE,
     ];
 
     public function __construct(
@@ -75,8 +84,8 @@ class ApiCrudRenderer extends AbstractRenderer
             $ownerClassDetails = $this->resolveOwnerClass($generator, $entityClassDetails, $ownerProperty);
         }
 
-        $fields = $this->buildFields($entityDoctrineDetails);
         $timestampField = $this->findTimestampField($entityDoctrineDetails);
+        $fields = $this->buildFields($entityDoctrineDetails, $timestampField);
         $timestampFieldClass = $this->timestampFieldClass($entityDoctrineDetails, $timestampField);
         $identifierField = $entityDoctrineDetails->getIdentifier();
         $idType = $this->detectIdType($entityDoctrineDetails);
@@ -195,6 +204,13 @@ class ApiCrudRenderer extends AbstractRenderer
         $specPath = $generator->getRootDirectory().'/crud-specs/'.$entityClassDetails->getShortName().'.json';
         $generator->dumpFile($specPath, $this->buildSpecJson($entityClassDetails, $fields, $permissionPrefix, $ownerProperty, $searchableFields, $timestampField, $idType));
 
+        $dateFields = array_values(array_filter($fields, static fn (array $f) => 'date' === $f['spec_type']));
+        $serializerMappingPath = null;
+        if ([] !== $dateFields) {
+            $serializerMappingPath = $generator->getRootDirectory().'/config/serializer/'.$entityClassDetails->getShortName().'.yaml';
+            $generator->dumpFile($serializerMappingPath, $this->buildSerializerMappingYaml($entityClassDetails, $dateFields));
+        }
+
         $attributesWritten = false;
         $attributeWriteError = null;
         if ($writeEntityAttributes) {
@@ -219,6 +235,7 @@ class ApiCrudRenderer extends AbstractRenderer
             $withAccessControl,
             null !== $ownerClassDetails,
             $specPath,
+            $serializerMappingPath,
             $searchableFields,
             $fields,
             $sharedVars['export_route_path'],
@@ -506,13 +523,18 @@ class ApiCrudRenderer extends AbstractRenderer
             ')]',
         ];
 
-        if ([] !== $searchableFields) {
-            $specTypeByName = array_column($fields, 'spec_type', 'name');
+        $specTypeByName = array_column($fields, 'spec_type', 'name');
+        $searchFilterFields = array_values(array_filter(
+            $searchableFields,
+            static fn (string $f) => !in_array($specTypeByName[$f] ?? 'text', ['date', 'datetime'], true),
+        ));
+
+        if ([] !== $searchFilterFields) {
             $useStatements[] = 'ApiPlatform\\Metadata\\ApiFilter';
             $useStatements[] = 'ApiPlatform\\Doctrine\\Orm\\Filter\\SearchFilter';
             $lines[] = '#[ApiFilter(SearchFilter::class, properties: ['.implode(', ', array_map(
                 fn (string $f) => "'".$f."' => '".$this->searchFilterStrategy((string) ($specTypeByName[$f] ?? 'text'))."'",
-                $searchableFields,
+                $searchFilterFields,
             )).'])]';
         }
 
@@ -545,13 +567,13 @@ class ApiCrudRenderer extends AbstractRenderer
     /**
      * @return list<array{name: string, php_type: string, nullable: bool, doctrine_type: string, length: int|null, constraints: list<string>, spec_type: string}>
      */
-    private function buildFields(EntityDetails $entityDoctrineDetails): array
+    private function buildFields(EntityDetails $entityDoctrineDetails, ?string $timestampField): array
     {
         $identifier = $entityDoctrineDetails->getIdentifier();
         $fields = [];
 
         foreach ($entityDoctrineDetails->getDisplayFields() as $fieldName => $mapping) {
-            if ($fieldName === $identifier) {
+            if ($fieldName === $identifier || $fieldName === $timestampField) {
                 continue;
             }
 
@@ -606,7 +628,7 @@ class ApiCrudRenderer extends AbstractRenderer
             }
 
             $doctrineType = (string) ($mapping['type'] ?? 'string');
-            if (in_array($doctrineType, self::SKIPPED_TYPES, true) && 1 === preg_match('/^created/i', $fieldName)) {
+            if (in_array($doctrineType, self::DATETIME_TYPES, true) && 1 === preg_match('/^created/i', $fieldName)) {
                 return $fieldName;
             }
         }
@@ -711,6 +733,8 @@ class ApiCrudRenderer extends AbstractRenderer
     {
         return match (true) {
             Types::TEXT === $doctrineType => 'textarea',
+            in_array($doctrineType, self::DATE_TYPES, true) => 'date',
+            in_array($doctrineType, self::DATETIME_TYPES, true) => 'datetime',
             'bool' === $phpType => 'boolean',
             'int' === $phpType, 'float' === $phpType => 'number',
             default => 'text',
@@ -745,6 +769,33 @@ class ApiCrudRenderer extends AbstractRenderer
     }
 
     /**
+     * Builds a Symfony serializer YAML mapping (auto-discovered from `config/serializer/`) that
+     * pins each `date`-typed field's normalization/denormalization format to `Y-m-d` (no time,
+     * no timezone) — Symfony's `DateTimeNormalizer` otherwise formats *any* `\DateTimeInterface`
+     * property (RFC3339, with time+offset) regardless of whether the Doctrine column is
+     * `date`/`date_immutable` or a real `datetime`. A dedicated new file rather than a
+     * `#[Context(...)]` attribute on the entity property: {@see EntityAttributeWriter} only
+     * knows how to write class-level attributes, not property-level ones, and this file is a
+     * plain, fully-derived overwrite (like {@see buildSpecJson()}) rather than an edit to
+     * hand-authored entity source.
+     *
+     * @param list<array{name: string}> $dateFields
+     */
+    private function buildSerializerMappingYaml(ClassNameDetails $entityClassDetails, array $dateFields): string
+    {
+        $attributes = [];
+        foreach ($dateFields as $field) {
+            $attributes[$field['name']] = [
+                'contexts' => [
+                    ['context' => ['datetime_format' => 'Y-m-d']],
+                ],
+            ];
+        }
+
+        return Yaml::dump([$entityClassDetails->getFullName() => ['attributes' => $attributes]], 6);
+    }
+
+    /**
      * @param list<string>               $searchableFields
      * @param list<array<string, mixed>> $fields as built by {@see buildFields()}, forwarded to
      *                                    {@see buildEntityAttributeCode()} for the manual
@@ -759,6 +810,7 @@ class ApiCrudRenderer extends AbstractRenderer
         bool $withAccessControl,
         bool $hasOwner,
         string $specPath,
+        ?string $serializerMappingPath,
         array $searchableFields,
         array $fields,
         string $exportRoutePath,
@@ -827,7 +879,10 @@ class ApiCrudRenderer extends AbstractRenderer
         }
         $steps[] = '';
         $steps[] = 'Cek Service yang di-generate — constructor/update() entity diasumsikan urutan parameter sama dengan urutan field Doctrine metadata; sesuaikan manual kalau beda.';
-        $steps[] = 'Field bertipe date/datetime otomatis di-skip dari Input DTO — tambahkan manual kalau memang perlu jadi input user.';
+        $steps[] = 'Field bertipe time (jam saja, tanpa tanggal) otomatis di-skip dari Input DTO — tambahkan manual kalau memang perlu jadi input user.';
+        if (null !== $serializerMappingPath) {
+            $steps[] = 'Field date (date-only, tanpa jam/timezone) ditemukan — mapping serializer ditulis ke: '.$serializerMappingPath.' (format response/request "Y-m-d" untuk field itu).';
+        }
         $steps[] = 'Spec untuk @kematjaya/crud-ui-generator ditulis ke: '.$specPath;
 
         return $steps;

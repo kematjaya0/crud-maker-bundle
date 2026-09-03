@@ -331,7 +331,7 @@ final class ApiCrudMakerTest extends WebTestCase
                 'permission-prefix' => 'test-legacy-articles',
                 'with-access-control' => true,
                 'with-tests' => false,
-                'searchable-fields' => 'headline,viewCount,featured',
+                'searchable-fields' => 'headline,viewCount,featured,publishedDate',
                 'write-entity-attributes' => true,
             ]);
 
@@ -342,6 +342,7 @@ final class ApiCrudMakerTest extends WebTestCase
             $this->generatedFiles[] = $basePath.'/State/TestLegacyArticleWriteProcessor.php';
             $this->generatedFiles[] = $basePath.'/Controller/TestLegacyArticleExportDataController.php';
             $this->generatedFiles[] = dirname(__DIR__).'/crud-specs/TestLegacyArticle.json';
+            $this->generatedFiles[] = dirname(__DIR__).'/config/serializer/TestLegacyArticle.yaml';
 
             $newContents = (string) file_get_contents($entityPath);
             self::assertStringContainsString('use ApiPlatform\Metadata\ApiResource;', $newContents);
@@ -349,7 +350,10 @@ final class ApiCrudMakerTest extends WebTestCase
             self::assertStringContainsString('#[ApiResource(', $newContents);
             // text fields keep the LIKE-based 'partial' strategy; number/boolean fields switch
             // to 'exact' (SearchFilter's partial/start/end/word_start strategies are string-only).
+            // publishedDate (a "date" spec type) is marked searchable but must NOT appear here —
+            // SearchFilter's string strategies aren't meaningful for a date column.
             self::assertStringContainsString("#[ApiFilter(SearchFilter::class, properties: ['headline' => 'partial', 'viewCount' => 'exact', 'featured' => 'exact'])]", $newContents);
+            self::assertStringNotContainsString("'publishedDate' =>", $newContents);
             self::assertStringContainsString('is_granted(\'test-legacy-articles.delete\')', $newContents);
             // pre-existing code must survive untouched
             self::assertStringContainsString('public function setHeadline(string $headline): static', $newContents);
@@ -357,6 +361,19 @@ final class ApiCrudMakerTest extends WebTestCase
             $lintProcess = new \Symfony\Component\Process\Process([\PHP_BINARY, '-l', $entityPath]);
             $lintProcess->run();
             self::assertTrue($lintProcess->isSuccessful(), $lintProcess->getErrorOutput());
+
+            $specFile = dirname(__DIR__).'/crud-specs/TestLegacyArticle.json';
+            $spec = json_decode((string) file_get_contents($specFile), true);
+            $specFieldsByName = array_column($spec['fields'], null, 'name');
+            self::assertSame('date', $specFieldsByName['publishedDate']['type']);
+
+            $serializerMappingFile = dirname(__DIR__).'/config/serializer/TestLegacyArticle.yaml';
+            self::assertFileExists($serializerMappingFile);
+            $mapping = \Symfony\Component\Yaml\Yaml::parseFile($serializerMappingFile);
+            self::assertSame(
+                'Y-m-d',
+                $mapping['Kematjaya\\CrudMakerBundle\\Tests\\Entity\\TestLegacyArticle']['attributes']['publishedDate']['contexts'][0]['context']['datetime_format'],
+            );
         } finally {
             file_put_contents($entityPath, $originalContents);
         }

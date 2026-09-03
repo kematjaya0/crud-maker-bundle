@@ -29,6 +29,9 @@ class TestLegacyArticle
     #[ORM\Column(type: 'boolean', nullable: true)]
     private ?bool $featured = null;
 
+    #[ORM\Column(type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $publishedDate = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -66,6 +69,18 @@ class TestLegacyArticle
     public function setFeatured(?bool $featured): static
     {
         $this->featured = $featured;
+
+        return $this;
+    }
+
+    public function getPublishedDate(): ?\DateTimeImmutable
+    {
+        return $this->publishedDate;
+    }
+
+    public function setPublishedDate(?\DateTimeImmutable $publishedDate): static
+    {
+        $this->publishedDate = $publishedDate;
 
         return $this;
     }
