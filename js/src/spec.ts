@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 
 export type FieldSpec = {
     name: string;
-    type: 'text' | 'textarea' | 'number' | 'boolean';
+    type: 'text' | 'textarea' | 'number' | 'boolean' | 'date' | 'datetime';
     required: boolean;
     maxLength: number | null;
     searchable: boolean;
@@ -24,7 +24,7 @@ function isFieldSpec(value: unknown): value is FieldSpec {
     const f = value as Record<string, unknown>;
     return (
         typeof f.name === 'string' &&
-        ['text', 'textarea', 'number', 'boolean'].includes(f.type as string) &&
+        ['text', 'textarea', 'number', 'boolean', 'date', 'datetime'].includes(f.type as string) &&
         typeof f.required === 'boolean' &&
         (f.maxLength === null || typeof f.maxLength === 'number') &&
         typeof f.searchable === 'boolean'

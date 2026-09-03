@@ -2,12 +2,21 @@ import type { CrudSpec, FieldSpec } from '../spec.js';
 import type { Names } from '../naming.js';
 import { displayFields, filterableFields, humanize, labelField, lowerWords } from '../naming.js';
 
-function columnCell(fieldName: string, timestampField: string | null): string {
-    if (fieldName === timestampField) {
+function columnCell(fieldName: string, fieldType: FieldSpec['type'] | null, timestampField: string | null): string {
+    if (fieldName === timestampField || fieldType === 'datetime') {
         return `                                    <td>
                                         {new Date(
                                             item.${fieldName}
                                         ).toLocaleString()}
+                                    </td>`;
+    }
+    if (fieldType === 'date') {
+        // "YYYY-MM-DD" alone parses as UTC midnight per spec (wrong day in timezones behind
+        // UTC); appending a time forces local-time parsing instead.
+        return `                                    <td>
+                                        {new Date(
+                                            \`\${item.${fieldName}}T00:00:00\`
+                                        ).toLocaleDateString()}
                                     </td>`;
     }
     return `                                    <td>{String(item.${fieldName})}</td>`;
@@ -26,6 +35,7 @@ export function table(spec: CrudSpec, names: Names): string {
     if (null !== spec.timestampField && !cols.includes(spec.timestampField)) {
         cols.push(spec.timestampField);
     }
+    const fieldTypeByName = new Map(spec.fields.map((f) => [f.name, f.type] as const));
     const label = labelField(spec);
     const noun = lowerWords(entityPascal);
     const pluralNoun = lowerWords(entitiesPascal);
@@ -35,7 +45,9 @@ export function table(spec: CrudSpec, names: Names): string {
     const filterPanelId = `${noun}-filter-panel`;
 
     const headCells = cols.map((c) => `                                <th>${humanize(c)}</th>`).join('\n');
-    const bodyCells = cols.map((c) => columnCell(c, spec.timestampField)).join('\n');
+    const bodyCells = cols
+        .map((c) => columnCell(c, fieldTypeByName.get(c) ?? null, spec.timestampField))
+        .join('\n');
 
     const filterButtonBlock = hasFilter
         ? `                    <Button

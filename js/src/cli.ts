@@ -15,6 +15,7 @@ import { apiShapesBlock, apiShapesFileHeader, apiShapesImport, apiShapesMarker }
 import { schemasBlock, schemasFileHeader, schemasMarker } from './templates/schemas.js';
 import { typesApiBlock, typesApiFileHeader, typesApiMarker } from './templates/typesApi.js';
 import { exportRoute, itemRoute, listRoute } from './templates/bffRoutes.js';
+import { dateLib } from './templates/dateLib.js';
 
 function parseArgs(argv: string[]): { specPath: string; srcDir: string } {
     const positional: string[] = [];
@@ -91,6 +92,9 @@ function main(): void {
     const libDir = join(src, 'lib');
     writeNewFile(join(libDir, `${names.entitiesKebab}-query.ts`), queryLib(spec, names), log);
     writeNewFile(join(libDir, `${names.entitiesKebab}-csv.ts`), csvLib(spec, names), log);
+    if (spec.fields.some((f) => f.type === 'datetime')) {
+        writeIfMissing(join(libDir, 'datetime.ts'), dateLib, log);
+    }
 
     appendBlockWithImport(
         join(libDir, 'api-shapes.ts'),
@@ -127,9 +131,11 @@ function main(): void {
     console.log(`  1. Run the backend maker's printed next-steps (ApiResource/ApiFilter attributes, permission keys, rate limiter config).`);
     console.log(`  2. Run "npm run api:types" in the frontend project so src/types/api.ts's paths/components lookups resolve.`);
     console.log(`  3. Confirm the OpenAPI collection path is "/api/${names.entitiesKebab}" — if the entity's #[ApiResource] uses a custom uriTemplate, fix the "paths[...]" lookups in the appended src/types/api.ts block by hand.`);
-    const excludedTextareaFields = spec.fields.filter((f) => f.searchable && f.type === 'textarea').map((f) => f.name);
-    if (excludedTextareaFields.length > 0) {
-        console.log(`  4. Note: "${excludedTextareaFields.join(', ')}" ${excludedTextareaFields.length > 1 ? 'are' : 'is'} marked searchable but excluded from the generated Filter panel (long text isn't a sensible filter input) — same exclusion as table/CSV columns.`);
+    const excludedFilterFields = spec.fields
+        .filter((f) => f.searchable && ['textarea', 'date', 'datetime'].includes(f.type))
+        .map((f) => f.name);
+    if (excludedFilterFields.length > 0) {
+        console.log(`  4. Note: "${excludedFilterFields.join(', ')}" ${excludedFilterFields.length > 1 ? 'are' : 'is'} marked searchable but excluded from the generated Filter panel (long text and date/datetime don't have a filter control yet) — long-text fields are also excluded from table/CSV columns.`);
     }
     console.log(`  Id type: "${spec.idType}" (from the spec's "idType") — validId() in the generated app/api/${names.entitiesKebab}/[id]/route.ts was generated to match.`);
     console.log(`  Run "npm run format" afterwards — generated files aren't pre-formatted to this project's Prettier config.`);

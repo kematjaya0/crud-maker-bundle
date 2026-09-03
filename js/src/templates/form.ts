@@ -41,6 +41,24 @@ function fieldMarkup(field: FieldSpec, entitiesKebab: string, autoFocus: boolean
                 />`;
     }
 
+    if (field.type === 'date') {
+        return `                <DateField
+                    id="${id}"
+                    label="${label}"${autoFocusProp}
+                    error={errors.${field.name}}
+                    registration={register('${field.name}')}
+                />`;
+    }
+
+    if (field.type === 'datetime') {
+        return `                <DateTimeField
+                    id="${id}"
+                    label="${label}"${autoFocusProp}
+                    error={errors.${field.name}}
+                    registration={register('${field.name}')}
+                />`;
+    }
+
     return `                <TextField
                     id="${id}"
                     label="${label}"
@@ -55,7 +73,14 @@ export function form(spec: CrudSpec, names: Names): string {
     const { entityPascal, entityCamel, entitiesKebab } = names;
     const usesTextarea = spec.fields.some((f) => f.type === 'textarea');
     const usesText = spec.fields.some((f) => f.type === 'text' || f.type === 'number');
-    const fieldComponents = [usesText ? 'TextField' : null, usesTextarea ? 'TextareaField' : null]
+    const usesDate = spec.fields.some((f) => f.type === 'date');
+    const usesDateTime = spec.fields.some((f) => f.type === 'datetime');
+    const fieldComponents = [
+        usesText ? 'TextField' : null,
+        usesTextarea ? 'TextareaField' : null,
+        usesDate ? 'DateField' : null,
+        usesDateTime ? 'DateTimeField' : null
+    ]
         .filter((c): c is string => c !== null)
         .join(', ');
 
@@ -63,7 +88,13 @@ export function form(spec: CrudSpec, names: Names): string {
         .map((f, i) => fieldMarkup(f, entitiesKebab, i === 0))
         .join('\n');
 
-    const resetFields = spec.fields.map((f) => `${f.name}: data.${f.name}`).join(', ');
+    const resetFields = spec.fields
+        .map((f) => (f.type === 'datetime' ? `${f.name}: toDatetimeLocalValue(data.${f.name})` : `${f.name}: data.${f.name}`))
+        .join(', ');
+    const submitFields = spec.fields
+        .map((f) => (f.type === 'datetime' ? `${f.name}: fromDatetimeLocalValue(values.${f.name})` : null))
+        .filter((c): c is string => c !== null)
+        .join(', ');
 
     return `'use client';
 
@@ -73,7 +104,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { is${entityPascal} } from '@/lib/api-shapes';
-import { ${entityCamel}Schema, type ${entityPascal}FormValues } from '@/lib/schemas';
+import { ${entityCamel}Schema, type ${entityPascal}FormValues } from '@/lib/schemas';${usesDateTime ? "\nimport { toDatetimeLocalValue, fromDatetimeLocalValue } from '@/lib/datetime';" : ''}
 
 type Props = {
     mode: 'create' | 'edit';
@@ -137,7 +168,7 @@ export function ${entityPascal}Form({ mode, ${entityCamel}Id }: Props) {
             response = await fetch(path, {
                 method: mode === 'edit' ? 'PATCH' : 'POST',
                 headers: { 'content-type': 'application/json' },
-                body: JSON.stringify(values)
+                body: JSON.stringify(${usesDateTime ? `{ ...values, ${submitFields} }` : 'values'})
             });
         } catch {
             setError('Network error while saving. Check your connection and try again.');

@@ -31,16 +31,21 @@ export function namesFromSpec(spec: CrudSpec): Names {
     return { entityPascal, entityCamel, entitiesKebab, entitiesPascal, entitiesCamel };
 }
 
+/** Field types with no filter-panel control yet — excluded from `filterableFields()`. */
+const UNFILTERABLE_TYPES: ReadonlyArray<FieldSpec['type']> = ['textarea', 'date', 'datetime'];
+
 /**
  * Fields rendered as controls in the list view's Filter panel: every `searchable` field except
- * `textarea` (long text doesn't make a sensible filter input), mirroring `displayFields()`'s
- * exclusion. All of these are wired into the list query and AND-combined. The CSV export
- * endpoint's OR-search (against every `searchable` field, textarea included) is a separate,
- * server-side-only concept — it reuses this list's first filterable field's current value as
- * its convenience search text (see `useExport.ts` / `bffRoutes.ts`'s `exportRoute`).
+ * `textarea` (long text doesn't make a sensible filter input) and `date`/`datetime` (no
+ * date-range filter control exists yet — a future iteration), mirroring `displayFields()`'s
+ * `textarea` exclusion plus this narrower one. All of these are wired into the list query and
+ * AND-combined. The CSV export endpoint's OR-search (against every `searchable` field, textarea
+ * included) is a separate, server-side-only concept — it reuses this list's first filterable
+ * field's current value as its convenience search text (see `useExport.ts` / `bffRoutes.ts`'s
+ * `exportRoute`).
  */
 export function filterableFields(spec: CrudSpec): FieldSpec[] {
-    return spec.fields.filter((f) => f.searchable && f.type !== 'textarea');
+    return spec.fields.filter((f) => f.searchable && !UNFILTERABLE_TYPES.includes(f.type));
 }
 
 /** "createdAt" -> "Created At", "TestArticle" -> "Test Article". */

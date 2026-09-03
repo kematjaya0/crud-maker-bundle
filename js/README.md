@@ -56,22 +56,31 @@ Appended to (multi-entity, idempotent — each entity gets one marker-guarded bl
 ## Assumptions / caveats
 
 - **Id type comes from the spec's `idType`** (`uuid`/`int`/`string`, written by `ApiCrudRenderer::detectIdType()` off the entity's actual id column) — `validId()` in the generated `[id]/route.ts` and the `is{Entity}` type guard in `api-shapes.ts` are generated to match. Older spec files without `idType` default to `uuid`.
-- **The list filter panel covers every `searchable` field except `textarea`.**
-  `naming.ts`'s `filterableFields()` renders one control per such field — text/number inputs
-  (ApiPlatform `SearchFilter` `'partial'`/`'exact'` strategy) and a boolean Any/Yes/No select
-  (`'exact'`) — all AND-combined into the same list query (one query param per property, backed
-  by a single `#[ApiFilter(SearchFilter::class, properties: [...])]` on the entity). The table's
-  collapsible Filter button toggles a `crud-filter-collapse` panel around the generated
-  `FilterPanel` component, and only appears when at least one field is filterable.
-  `searchable` `textarea` fields are excluded (same exclusion as table/CSV columns) — `cli.ts`
-  prints a next-steps note when that applies.
+- **The list filter panel covers every `searchable` field except `textarea`, `date`, and
+  `datetime`.** `naming.ts`'s `filterableFields()` renders one control per remaining field —
+  text/number inputs (ApiPlatform `SearchFilter` `'partial'`/`'exact'` strategy) and a boolean
+  Any/Yes/No select (`'exact'`) — all AND-combined into the same list query (one query param per
+  property, backed by a single `#[ApiFilter(SearchFilter::class, properties: [...])]` on the
+  entity). The table's collapsible Filter button toggles a `crud-filter-collapse` panel around
+  the generated `FilterPanel` component, and only appears when at least one field is filterable.
+  Excluded `searchable` fields get a `cli.ts` next-steps note — no date-range filter control
+  exists yet (a future iteration), and long text isn't a sensible filter input.
 - **CSV export ("Export all") only reflects the first filterable field's current value**, sent as
   a single OR-search `search` param the backend matches across *every* `searchable` field
   (textarea included) server-side — a separate, broader contract from the list's precise
   AND-per-property filtering. The other filter panel fields don't currently narrow the export.
+- **`date`/`datetime` fields are real form fields and table/CSV columns.** Backed by
+  `ui-kit`'s `DateField`/`DateTimeField` (native `<input type="date">`/`type="datetime-local">`).
+  `date` fields round-trip as plain `"Y-m-d"` strings — the backend maker writes a
+  `config/serializer/{Entity}.yaml` Symfony serializer mapping pinning that format (otherwise
+  Symfony's default `DateTimeNormalizer` would emit a full RFC3339 datetime with a spurious
+  time/timezone for a date-only column). `datetime` fields keep the default RFC3339 wire format;
+  the generated form converts to/from `<input type="datetime-local">`'s local-wall-clock string
+  via `src/lib/datetime.ts` (written once, shared across entities) at the `reset()`/`submit()`
+  boundaries — the `Date` constructor's local-time parsing makes this conversion timezone-safe.
 - **The table/CSV export skip `textarea` fields** (long text), mirroring the hand-written Notes
-  feature (shows `title`, not `body`). Everything else (`text`/`number`/`boolean`) becomes a
-  column.
+  feature (shows `title`, not `body`). Everything else (`text`/`number`/`boolean`/`date`/
+  `datetime`) becomes a column.
 - **Getters are assumed on the entity/generated types** in the conventional `get{Field}()` /
   camelCase-property shape used throughout this boilerplate.
 - **`npm run api:types` must be run first** (after adding the backend's `#[ApiResource]`/
