@@ -187,7 +187,7 @@ export function ${entityPascal}Form({ mode, ${entityCamel}Id }: Props) {
         <ListPageCard
             title={mode === 'edit' ? 'Edit' : 'New'}
             error={error}
-            style={{ maxWidth: 640 }}
+            style={{ width: '100%' }}
         >
             <form onSubmit={handleSubmit(submit)} noValidate>
 ${fieldsMarkup}
