@@ -5,7 +5,12 @@ export type Names = {
     entityPascal: string;
     /** camelCase singular entity name, e.g. "testArticle". */
     entityCamel: string;
-    /** kebab-case plural, used as the URL segment / folder name, e.g. "test-articles" (verbatim from spec.permissionPrefix). */
+    /**
+     * kebab-case plural, used as the frontend's own URL segment / folder name, e.g.
+     * "test-articles" (verbatim from spec.permissionPrefix). This never reaches the backend —
+     * `bffRoutes.ts`'s calls to the real API use `spec.apiResourcePath` instead, since
+     * permissionPrefix is a free-text label that can diverge from ApiPlatform's actual URI.
+     */
     entitiesKebab: string;
     /** PascalCase plural, e.g. "TestArticles" — used for compound identifiers (hook/type names). */
     entitiesPascal: string;

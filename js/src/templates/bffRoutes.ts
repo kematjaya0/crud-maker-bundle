@@ -8,17 +8,18 @@ function tsType(field: FieldSpec): string {
     return 'string';
 }
 
-export function listRoute(_spec: CrudSpec, names: Names): string {
+export function listRoute(spec: CrudSpec, names: Names): string {
     const { entityCamel, entitiesKebab } = names;
+    const backendPath = spec.apiResourcePath;
     return `import type { NextRequest } from 'next/server';
 import { authedBackend } from '@/lib/bff';
 import { parseJson, validateOrigin } from '@/lib/http';
-import { build${names.entitiesPascal}ApiPath, parse${names.entitiesPascal}Query } from '@/lib/${entitiesKebab}-query';
+import { build${names.entitiesPascal}ApiPath, build${names.entitiesPascal}BackendPath, parse${names.entitiesPascal}Query } from '@/lib/${entitiesKebab}-query';
 import { ${entityCamel}Schema } from '@/lib/schemas';
 
 export async function GET(request: NextRequest) {
     return authedBackend(
-        build${names.entitiesPascal}ApiPath(parse${names.entitiesPascal}Query(request.nextUrl.searchParams))
+        build${names.entitiesPascal}BackendPath(parse${names.entitiesPascal}Query(request.nextUrl.searchParams))
     );
 }
 
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     if (badOrigin) return badOrigin;
     const parsed = await parseJson(request, ${entityCamel}Schema);
     if ('error' in parsed) return parsed.error;
-    return authedBackend('/api/${entitiesKebab}', {
+    return authedBackend('${backendPath}', {
         method: 'POST',
         body: JSON.stringify(parsed.data)
     });
@@ -45,7 +46,8 @@ function validIdCheck(idType: CrudSpec['idType']): string {
 }
 
 export function itemRoute(spec: CrudSpec, names: Names): string {
-    const { entityCamel, entitiesKebab } = names;
+    const { entityCamel } = names;
+    const backendPath = spec.apiResourcePath;
     return `import type { NextRequest } from 'next/server';
 import { authedBackend } from '@/lib/bff';
 import { jsonProblem, parseJson, validateOrigin } from '@/lib/http';
@@ -60,7 +62,7 @@ function validId(id: string) {
 export async function GET(_request: NextRequest, context: Params) {
     const { id } = await context.params;
     if (!validId(id)) return jsonProblem(404, { title: 'Not Found' });
-    return authedBackend(\`/api/${entitiesKebab}/\${id}\`);
+    return authedBackend(\`${backendPath}/\${id}\`);
 }
 
 export async function PATCH(request: NextRequest, context: Params) {
@@ -72,7 +74,7 @@ export async function PATCH(request: NextRequest, context: Params) {
     if ('error' in parsed) return parsed.error;
     // Backend only exposes a Put operation (full replacement) — no Patch operation exists,
     // so the upstream call uses PUT even though the BFF's own contract to the browser stays PATCH.
-    return authedBackend(\`/api/${entitiesKebab}/\${id}\`, {
+    return authedBackend(\`${backendPath}/\${id}\`, {
         method: 'PUT',
         body: JSON.stringify(parsed.data)
     });
@@ -83,7 +85,7 @@ export async function DELETE(request: NextRequest, context: Params) {
     if (badOrigin) return badOrigin;
     const { id } = await context.params;
     if (!validId(id)) return jsonProblem(404, { title: 'Not Found' });
-    return authedBackend(\`/api/${entitiesKebab}/\${id}\`, { method: 'DELETE' });
+    return authedBackend(\`${backendPath}/\${id}\`, { method: 'DELETE' });
 }
 
 export const dynamic = 'force-dynamic';

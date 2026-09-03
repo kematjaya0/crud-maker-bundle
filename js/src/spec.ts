@@ -12,6 +12,15 @@ export type IdType = 'uuid' | 'int' | 'string';
 
 export type CrudSpec = {
     entity: string;
+    /**
+     * The entity's real ApiPlatform collection/item URI, e.g. "/api/categories" — written by
+     * `make:kmj-api-crud` as `pluralize(tableize($shortName))` under `/api/`, matching
+     * ApiPlatform's default `path_segment_name_generator`. This is independent of
+     * `permissionPrefix` (a free-text label for permission keys and the frontend's own route
+     * slugs) and must be used verbatim for the BFF's calls to the backend — never re-derived
+     * from `permissionPrefix` or `entity`, which can diverge from it (see bffRoutes.ts).
+     */
+    apiResourcePath: string;
     permissionPrefix: string;
     ownerProperty: string | null;
     timestampField: string | null;
@@ -54,6 +63,14 @@ export function loadSpec(specPath: string): CrudSpec {
     if (typeof spec.entity !== 'string' || spec.entity === '') {
         throw new Error(`Spec file missing "entity": ${specPath}`);
     }
+    if (typeof spec.apiResourcePath !== 'string' || spec.apiResourcePath === '') {
+        throw new Error(
+            `Spec file missing "apiResourcePath": ${specPath}\n` +
+                'Regenerate it with a current version of make:kmj-api-crud, or add the field by ' +
+                "hand — it must match the entity's real ApiPlatform collection/item URI (e.g. " +
+                '"/api/categories"), not a guess derived from "permissionPrefix" or "entity".',
+        );
+    }
     if (typeof spec.permissionPrefix !== 'string' || spec.permissionPrefix === '') {
         throw new Error(`Spec file missing "permissionPrefix": ${specPath}`);
     }
@@ -66,6 +83,7 @@ export function loadSpec(specPath: string): CrudSpec {
 
     return {
         entity: spec.entity,
+        apiResourcePath: spec.apiResourcePath,
         permissionPrefix: spec.permissionPrefix,
         ownerProperty: typeof spec.ownerProperty === 'string' ? spec.ownerProperty : null,
         timestampField: typeof spec.timestampField === 'string' ? spec.timestampField : null,

@@ -1,94 +1,134 @@
 # @kematjaya/crud-ui-generator
 
-Next.js CRUD frontend generator that reads the `crud-specs/{Entity}.json` sidecar written by
-[kematjaya/crud-maker-bundle](https://github.com/kematjaya0/crud-maker-bundle)'s
-`make:kmj-api-crud`, and generates pages, components, and BFF routes matching the shape of a
-hand-written CRUD feature (list/create/edit pages, table with search/pagination/bulk-delete/CSV
-export, form, BFF proxy routes).
+Generator frontend CRUD untuk Next.js yang membaca sidecar `crud-specs/{Entity}.json` yang
+ditulis oleh `make:kmj-api-crud` dari
+[kematjaya/crud-maker-bundle](https://github.com/kematjaya0/crud-maker-bundle), lalu
+menghasilkan halaman, komponen, dan BFF routes dengan bentuk yang sama seperti fitur CRUD yang
+ditulis manual (halaman list/create/edit, tabel dengan search/pagination/bulk-delete/export CSV,
+form, BFF proxy routes).
 
-This is a dev-time code generator (like Plop/Hygen), not a runtime component library. It targets
-projects that already follow this monorepo's Next.js conventions:
+Ini adalah code generator yang dijalankan saat development (seperti Plop/Hygen), bukan library
+komponen runtime. Generator ini menyasar project yang sudah mengikuti konvensi Next.js di
+monorepo ini:
 
-- `@kematjaya/bootstrap-ui-kit` for `ListPageCard`/`TextField`/`Button`/etc.
-- `@kematjaya/access-control-ui` for `usePermissions()`
-- `src/lib/http.ts`, `src/lib/bff.ts` (BFF proxy helpers — `authedBackend`, `validateOrigin`, `parseJson`, `jsonProblem`)
-- `src/lib/permissions.ts` exporting `requirePermission()`
-- `src/types/api.ts` + `src/types/api.generated.ts` (OpenAPI types via `openapi-typescript`)
+- `@kematjaya/bootstrap-ui-kit` untuk `ListPageCard`/`TextField`/`Button`/dll.
+- `@kematjaya/access-control-ui` untuk `usePermissions()`
+- `src/lib/http.ts`, `src/lib/bff.ts` (helper proxy BFF — `authedBackend`, `validateOrigin`, `parseJson`, `jsonProblem`)
+- `src/lib/permissions.ts` yang meng-export `requirePermission()`
+- `src/types/api.ts` + `src/types/api.generated.ts` (tipe dari OpenAPI via `openapi-typescript`)
 
-It is not a general-purpose Next.js scaffolder — running it against a project that doesn't already
-have those pieces will produce files that don't compile until you add them.
+Ini bukan scaffolder Next.js serba-guna — menjalankannya pada project yang belum punya
+komponen-komponen di atas akan menghasilkan file yang tidak bisa di-compile sampai Anda
+menambahkannya.
 
-## Usage
+## Instalasi
+
+Tidak perlu instalasi terpisah untuk pemakaian sekali pakai — `npx` akan mengambilnya otomatis:
 
 ```
 npx @kematjaya/crud-ui-generator <spec-path> [--src <dir>]
 ```
 
-- `<spec-path>` — path to the `crud-specs/{Entity}.json` file written by `make:kmj-api-crud`.
-- `--src <dir>` — the frontend project's `src/` directory to generate into (default: `src`).
+Kalau ingin dipasang sebagai dev dependency permanen alih-alih `npx` setiap kali:
 
-Example, run from the frontend project root, with the backend as a sibling directory:
+```
+npm install --save-dev @kematjaya/crud-ui-generator
+```
+
+## Cara pakai
+
+```
+npx @kematjaya/crud-ui-generator <spec-path> [--src <dir>]
+```
+
+- `<spec-path>` — path ke file `crud-specs/{Entity}.json` yang ditulis oleh `make:kmj-api-crud`.
+- `--src <dir>` — direktori `src/` project frontend tempat hasil generate ditulis (default: `src`).
+
+Contoh, dijalankan dari root project frontend, dengan backend sebagai direktori bertetangga:
 
 ```
 npx @kematjaya/crud-ui-generator ../backend/crud-specs/Note.json --src src
 ```
 
-## What it generates
+## Apa saja yang di-generate
 
-Per entity (skipped if the file already exists — safe to re-run):
+Per entity (dilewati kalau file sudah ada — aman dijalankan ulang):
 
 - `app/dashboard/{entities}/page.tsx`, `new/page.tsx`, `[id]/edit/page.tsx`
 - `components/{entities}/{Entity}Table.tsx`, `{Entity}Form.tsx`, `use{Entities}Export.ts`
 - `lib/{entities}-query.ts`, `lib/{entities}-csv.ts`
 - `app/api/{entities}/route.ts`, `[id]/route.ts`, `export/route.ts` (BFF proxy)
 
-Shared, entity-agnostic UI primitives (written once, reused by every entity):
+Primitive UI yang dipakai bersama, tidak spesifik ke satu entity (ditulis sekali, dipakai ulang
+oleh semua entity):
 
 - `components/crud/DeleteConfirmModal.tsx`, `BulkActionsBar.tsx`, `PaginationBar.tsx`,
   `SearchPanel.tsx`, `ExportAllButton.tsx`
 
-Appended to (multi-entity, idempotent — each entity gets one marker-guarded block):
+Ditambahkan ke (multi-entity, idempotent — tiap entity dapat satu blok yang dijaga marker):
 
-- `lib/api-shapes.ts` — `is{Entity}`/`is{Entity}Collection` type guards
-- `lib/schemas.ts` — a Zod schema per entity
-- `types/api.ts` — types derived from the OpenAPI-generated `paths`/`components`
+- `lib/api-shapes.ts` — type guard `is{Entity}`/`is{Entity}Collection`
+- `lib/schemas.ts` — satu Zod schema per entity
+- `types/api.ts` — tipe hasil turunan dari `paths`/`components` OpenAPI
 
-## Assumptions / caveats
+## Asumsi / catatan penting
 
-- **Id type comes from the spec's `idType`** (`uuid`/`int`/`string`, written by `ApiCrudRenderer::detectIdType()` off the entity's actual id column) — `validId()` in the generated `[id]/route.ts` and the `is{Entity}` type guard in `api-shapes.ts` are generated to match. Older spec files without `idType` default to `uuid`.
-- **The list filter panel covers every `searchable` field except `textarea`, `date`, and
-  `datetime`.** `naming.ts`'s `filterableFields()` renders one control per remaining field —
-  text/number inputs (ApiPlatform `SearchFilter` `'partial'`/`'exact'` strategy) and a boolean
-  Any/Yes/No select (`'exact'`) — all AND-combined into the same list query (one query param per
-  property, backed by a single `#[ApiFilter(SearchFilter::class, properties: [...])]` on the
-  entity). The table's collapsible Filter button toggles a `crud-filter-collapse` panel around
-  the generated `FilterPanel` component, and only appears when at least one field is filterable.
-  Excluded `searchable` fields get a `cli.ts` next-steps note — no date-range filter control
-  exists yet (a future iteration), and long text isn't a sensible filter input.
-- **CSV export ("Export all") only reflects the first filterable field's current value**, sent as
-  a single OR-search `search` param the backend matches across *every* `searchable` field
-  (textarea included) server-side — a separate, broader contract from the list's precise
-  AND-per-property filtering. The other filter panel fields don't currently narrow the export.
-- **`date`/`datetime` fields are real form fields and table/CSV columns.** Backed by
-  `ui-kit`'s `DateField`/`DateTimeField` (native `<input type="date">`/`type="datetime-local">`).
-  `date` fields round-trip as plain `"Y-m-d"` strings — the backend maker writes a
-  `config/serializer/{Entity}.yaml` Symfony serializer mapping pinning that format (otherwise
-  Symfony's default `DateTimeNormalizer` would emit a full RFC3339 datetime with a spurious
-  time/timezone for a date-only column). `datetime` fields keep the default RFC3339 wire format;
-  the generated form converts to/from `<input type="datetime-local">`'s local-wall-clock string
-  via `src/lib/datetime.ts` (written once, shared across entities) at the `reset()`/`submit()`
-  boundaries — the `Date` constructor's local-time parsing makes this conversion timezone-safe.
-- **The table/CSV export skip `textarea` fields** (long text), mirroring the hand-written Notes
-  feature (shows `title`, not `body`). Everything else (`text`/`number`/`boolean`/`date`/
-  `datetime`) becomes a column.
-- **Getters are assumed on the entity/generated types** in the conventional `get{Field}()` /
-  camelCase-property shape used throughout this boilerplate.
-- **`npm run api:types` must be run first** (after adding the backend's `#[ApiResource]`/
-  `#[ApiFilter]` attributes — see `make:kmj-api-crud`'s printed next-steps) so
-  `src/types/api.ts`'s `paths['/api/{entities}']` / `components['schemas'][...]` lookups resolve.
-  If the entity's `#[ApiResource]` uses a custom `uriTemplate` that doesn't match
-  `permissionPrefix`, fix those lookups by hand.
-- Generated files aren't run through Prettier — run `npm run format` afterwards.
+- **Tipe id diambil dari `idType` di spec** (`uuid`/`int`/`string`, ditulis oleh
+  `ApiCrudRenderer::detectIdType()` berdasarkan kolom id sebenarnya di entity) — `validId()` di
+  `[id]/route.ts` hasil generate dan type guard `is{Entity}` di `api-shapes.ts` dibuat
+  menyesuaikan. Spec lama tanpa `idType` default ke `uuid`.
+- **Panel filter di halaman list mencakup semua field `searchable` kecuali `textarea`, `date`,
+  dan `datetime`.** `filterableFields()` di `naming.ts` merender satu kontrol per field yang
+  tersisa — input text/number (strategi ApiPlatform `SearchFilter` `'partial'`/`'exact'`) dan
+  select boolean Any/Yes/No (`'exact'`) — semuanya digabung dengan AND dalam satu query list
+  (satu query param per properti, didukung satu
+  `#[ApiFilter(SearchFilter::class, properties: [...])]` di entity). Tombol Filter yang bisa
+  dilipat di tabel membuka panel `crud-filter-collapse` berisi komponen `FilterPanel` hasil
+  generate, dan hanya muncul kalau minimal satu field bisa difilter. Field `searchable` yang
+  dikecualikan akan dapat catatan next-steps di `cli.ts` — belum ada kontrol filter rentang
+  tanggal (iterasi berikutnya), dan teks panjang memang bukan input filter yang masuk akal.
+- **Export CSV ("Export all") hanya mencerminkan nilai field filterable pertama saat ini**,
+  dikirim sebagai satu parameter `search` (OR-search) yang di backend dicocokkan ke *semua*
+  field `searchable` (termasuk textarea) — kontrak yang berbeda dan lebih longgar dari filter
+  AND-per-properti yang presisi di halaman list. Field filter lain belum mempersempit hasil
+  export.
+- **Field `date`/`datetime` adalah field form dan kolom tabel/CSV sungguhan.** Didukung
+  `DateField`/`DateTimeField` dari `ui-kit` (native `<input type="date">`/
+  `type="datetime-local">`). Field `date` bolak-balik sebagai string `"Y-m-d"` polos — maker di
+  sisi backend menulis mapping serializer Symfony `config/serializer/{Entity}.yaml` yang
+  mengunci format itu (kalau tidak, `DateTimeNormalizer` default Symfony akan menghasilkan
+  datetime RFC3339 lengkap dengan jam/timezone yang tidak seharusnya ada untuk kolom
+  date-only). Field `datetime` tetap pakai format wire RFC3339 default; form hasil generate
+  mengonversi ke/dari string local-wall-clock `<input type="datetime-local">` lewat
+  `src/lib/datetime.ts` (ditulis sekali, dipakai bersama semua entity) di boundary
+  `reset()`/`submit()` — parsing local-time dari constructor `Date` membuat konversi ini aman
+  terhadap timezone.
+- **Tabel/export CSV melewati field `textarea`** (teks panjang), meniru fitur Notes yang ditulis
+  manual (menampilkan `title`, bukan `body`). Selain itu (`text`/`number`/`boolean`/`date`/
+  `datetime`) menjadi kolom.
+- **Getter diasumsikan ada** pada entity/tipe hasil generate, dalam bentuk konvensional
+  `get{Field}()` / properti camelCase yang dipakai di seluruh boilerplate ini.
+- **`npm run api:types` harus dijalankan lebih dulu** (setelah atribut `#[ApiResource]`/
+  `#[ApiFilter]` backend ditambahkan — lihat next-steps yang dicetak `make:kmj-api-crud`) supaya
+  lookup `paths['/api/{entities}']` / `components['schemas'][...]` di `src/types/api.ts`
+  berhasil. Lookup ini berdasarkan `apiResourcePath` (catatan literal URI ApiPlatform
+  sebenarnya milik entity, dari spec), **bukan** `permissionPrefix` — kalau `#[ApiResource]`
+  entity memakai `uriTemplate` custom yang tidak cocok dengan `apiResourcePath`, atau project
+  meng-override `api_platform.path_segment_name_generator` dari default-nya, perbaiki lookup itu
+  secara manual.
+- **Panggilan BFF ke backend (`app/api/{entities}/route.ts`, `[id]/route.ts`,
+  `build{Entities}BackendPath` di `lib/{entities}-query.ts`) selalu memakai `apiResourcePath`
+  dari spec, tidak pernah `permissionPrefix`.** `permissionPrefix` hanya menamai route/folder
+  frontend sendiri dan permission key — nilainya bebas (free text) dan bisa berbeda dari URI
+  plural asli ApiPlatform (misalnya entity `Category` yang di-generate dengan
+  `permissionPrefix: "category"` tetap saja disajikan backend di `/api/categories`).
+  `apiResourcePath` ditulis oleh `make:kmj-api-crud` sebagai `pluralize(tableize($shortName))`,
+  meniru persis `path_segment_name_generator` default ApiPlatform — frontend wajib mengikuti
+  nilai ini apa adanya, karena backend digenerate lebih dulu dan menjadi satu-satunya sumber
+  kebenaran untuk URL miliknya sendiri. Spec lama dari sebelum field ini ada akan gagal dimuat
+  dengan pesan error yang jelas; tambahkan `"apiResourcePath"` secara manual (atau generate
+  ulang).
+- File hasil generate tidak melewati Prettier — jalankan `npm run format` setelahnya.
 
 ## Development
 

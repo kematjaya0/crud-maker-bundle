@@ -190,6 +190,12 @@ final class ApiCrudMakerTest extends WebTestCase
 
         $spec = json_decode((string) file_get_contents($specFile), true);
         self::assertSame('TestArticle', $spec['entity']);
+        // ApiPlatform's default path_segment_name_generator (underscore) derives the real URI as
+        // pluralize(tableize($shortName)) — "test_articles", NOT the dashed permissionPrefix
+        // below. Generated entities never get a custom uriTemplate, so this is what ApiPlatform
+        // actually serves; the frontend generator must read this, never permissionPrefix, for
+        // its calls to the backend (see js/src/templates/bffRoutes.ts).
+        self::assertSame('/api/test_articles', $spec['apiResourcePath']);
         self::assertSame('test-articles', $spec['permissionPrefix']);
         self::assertSame('owner', $spec['ownerProperty']);
 

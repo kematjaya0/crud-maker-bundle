@@ -749,6 +749,19 @@ class ApiCrudRenderer extends AbstractRenderer
     {
         $spec = [
             'entity' => $entityClassDetails->getShortName(),
+            // The actual ApiPlatform collection/item URI (e.g. "/api/categories",
+            // "/api/test_articles") — generated entities never get a custom uriTemplate (see
+            // buildEntityAttributeCode()), so ApiPlatform derives it via its default
+            // `path_segment_name_generator` (api_platform.metadata.path_segment_name_generator.
+            // underscore, unless a project overrides this config): pluralize(tableize($shortName))
+            // — see AbstractRenderer::tableize(). This is NOT the same as permissionPrefix (a
+            // free-text label for permission keys and the frontend's own route slugs, which can
+            // diverge from this — e.g. a Category entity generated with permissionPrefix
+            // "category" left the frontend generator guessing "/api/category" while ApiPlatform
+            // actually served "/api/categories"). The JS generator must read this value verbatim
+            // rather than re-deriving it. If the project overrides
+            // `api_platform.path_segment_name_generator` (e.g. to "dash"), fix this value by hand.
+            'apiResourcePath' => '/api/'.$this->pluralize($this->tableize($entityClassDetails->getShortName())),
             'permissionPrefix' => $permissionPrefix,
             'ownerProperty' => $ownerProperty,
             'timestampField' => $timestampField,

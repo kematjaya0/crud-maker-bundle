@@ -1,162 +1,200 @@
 # kematjaya/crud-maker-api-bundle
 
-Symfony MakerBundle command that generates the write-side of an
-[API Platform](https://api-platform.com/) resource (Input DTO, Service, WriteProcessor, CSV
-export endpoint) for an *existing* Doctrine entity, plus a `crud-specs/{Entity}.json` sidecar
-that [`@kematjaya/crud-ui-generator`](https://www.npmjs.com/package/@kematjaya/crud-ui-generator)
-reads to generate a matching Next.js frontend (list/create/edit pages, table with
-search/pagination/bulk-delete/CSV export, form, BFF proxy routes).
+Command Symfony MakerBundle yang men-generate sisi tulis (write-side) dari sebuah resource
+[API Platform](https://api-platform.com/) (Input DTO, Service, WriteProcessor, endpoint export
+CSV) untuk entity Doctrine yang *sudah ada*, plus sidecar `crud-specs/{Entity}.json` yang dibaca
+[`@kematjaya/crud-ui-generator`](https://www.npmjs.com/package/@kematjaya/crud-ui-generator)
+untuk men-generate frontend Next.js yang sepadan (halaman list/create/edit, tabel dengan
+search/pagination/bulk-delete/export CSV, form, BFF proxy routes).
 
-Separate code path from [`kematjaya/crud-maker-twig-bundle`](https://github.com/kematjaya0/crud-maker-twig-bundle) — use
-that one instead if you're rendering server-side Twig views, not an API Platform + Next.js app.
+Jalur kode terpisah dari
+[`kematjaya/crud-maker-twig-bundle`](https://github.com/kematjaya0/crud-maker-twig-bundle) —
+pakai bundle itu kalau Anda merender view Twig sisi server, bukan aplikasi API Platform +
+Next.js.
 
-## 1. Install
+## 1. Instalasi
 
 ```
 composer require kematjaya/crud-maker-api-bundle
 ```
 
-Register the bundle in `config/bundles.php`:
+Daftarkan bundle-nya di `config/bundles.php`:
 
 ```php
 Kematjaya\CrudMakerBundle\Api\CrudMakerApiBundle::class => ['all' => true],
 ```
 
-This bundle does **not** require `symfony/twig-bundle`, `symfony/form`, or
-`symfony/security-csrf` — only what API Platform CRUD generation actually needs. You'll need
-`api-platform/symfony` in your project separately (the maker checks for it and warns if it's
-missing, but doesn't force it as a hard composer dependency).
+Bundle ini **tidak** membutuhkan `symfony/twig-bundle`, `symfony/form`, atau
+`symfony/security-csrf` — hanya yang benar-benar dibutuhkan untuk generate CRUD API Platform.
+Anda tetap perlu `api-platform/symfony` di project secara terpisah (maker akan mengecek dan
+memberi peringatan kalau tidak ada, tapi tidak memaksanya sebagai dependency composer wajib).
 
-## 2. Have an entity
+## 2. Siapkan entity-nya
 
-The entity must already exist (`make:entity` or hand-written) with a repository class. Any of
-these shapes work — the maker detects which one your entity uses and generates matching code:
+Entity-nya harus sudah ada (`make:entity` atau ditulis manual) beserta repository class-nya.
+Kedua bentuk berikut didukung — maker mendeteksi bentuk mana yang dipakai entity Anda dan
+men-generate kode yang sesuai:
 
-- **constructor + `update()`**: `new Entity($field1, $field2)` at create time, `$entity->update($field1, $field2)` at edit time (params in the same order as the entity's Doctrine field mapping).
-- **setters** (what a plain `make:entity`-scaffolded entity looks like): `new Entity()` then `$entity->setField1(...)->setField2(...)`, no constructor/`update()` needed.
+- **constructor + `update()`**: `new Entity($field1, $field2)` saat create, lalu
+  `$entity->update($field1, $field2)` saat edit (urutan parameter sama dengan urutan mapping
+  field Doctrine di entity).
+- **setter** (bentuk umum hasil `make:entity` polos): `new Entity()` lalu
+  `$entity->setField1(...)->setField2(...)`, tidak perlu constructor/`update()`.
 
-If neither pattern is viable (e.g. a required-arg constructor with no matching `update()`, or a
-setter missing for one of the fields), the command fails with a clear error instead of silently
-generating broken code.
+Kalau tidak ada pola yang cocok (misalnya constructor dengan argumen wajib tapi tanpa `update()`
+yang sepadan, atau ada field yang tidak punya setter), command akan gagal dengan pesan error
+yang jelas alih-alih diam-diam men-generate kode yang rusak.
 
-## 3. Run the maker
+## 3. Jalankan maker-nya
 
 ```
 php bin/console make:kmj-api-crud
 ```
 
-It asks for:
+Command ini akan menanyakan:
 
-| Prompt | Meaning |
+| Pertanyaan | Maksud |
 |---|---|
-| `entity-class` | The entity to generate CRUD for (autocompletes) |
-| `owner-property` | Association property scoping rows to the current user (e.g. `owner`) — `-` for none |
-| `permission-prefix` | Prefix for permission keys / URL segment (e.g. `notes` → `notes.create`, `/api/notes`) — `-` to guess from the entity name |
-| `with-access-control` | Gate create/edit/delete/export via [`kematjaya/access-control-bundle`](https://github.com/kematjaya0/access-control-bundle)'s `isGranted()`? |
-| `with-tests` | Generate a PHPUnit test for the Service? |
-| `searchable-fields` | Comma-separated field names searchable from the frontend (e.g. `title`) — `-` for none |
-| `write-entity-attributes` | Add `#[ApiResource]`/`#[ApiFilter]` to the entity file automatically? (see below) |
+| `entity-class` | Entity yang mau dibuatkan CRUD-nya (ada autocomplete) |
+| `owner-property` | Properti relasi yang membatasi baris data ke user saat ini (mis. `owner`) — isi `-` kalau tidak ada |
+| `permission-prefix` | Prefix untuk permission key / segmen URL frontend (mis. `notes` → `notes.create`, `/dashboard/notes`) — isi `-` untuk ditebak dari nama entity. **Catatan: ini hanya label bebas untuk permission key dan route frontend — bukan URL API sebenarnya.** URL resource API Platform yang sesungguhnya selalu berupa `pluralize(tableize($shortName))` dan ditulis apa adanya ke field `apiResourcePath` di spec JSON, terlepas dari nilai `permission-prefix` yang Anda pilih di sini. |
+| `with-access-control` | Gerbangi create/edit/delete/export lewat `isGranted()` dari [`kematjaya/access-control-bundle`](https://github.com/kematjaya0/access-control-bundle)? |
+| `with-tests` | Generate test PHPUnit untuk Service-nya? |
+| `searchable-fields` | Nama field, dipisah koma, yang bisa dicari dari frontend (mis. `title`) — isi `-` kalau tidak ada |
+| `write-entity-attributes` | Tambahkan `#[ApiResource]`/`#[ApiFilter]` ke file entity secara otomatis? (lihat di bawah) |
 
-Non-interactively:
+Non-interaktif:
 
 ```
 php bin/console make:kmj-api-crud Note owner notes true true title true --no-interaction
 ```
 
-## 4. What gets written
+## 4. Apa saja yang ditulis
 
 - `src/Dto/{Entity}Input.php`, `src/Service/{Entity}Service(Interface).php`, `src/State/{Entity}WriteProcessor.php`
-- `src/Controller/{Entity}ExportDataController.php` — CSV-export-data endpoint (`/api/{prefix}/export-data`, rate-limited, returns JSON — the frontend turns it into an actual CSV download)
-- `src/State/CurrentUser{Entity}Extension.php` (only if `owner-property` is set) — scopes `GetCollection`/`Get` to the current user's rows
-- `tests/Unit/Service/{Entity}ServiceTest.php` (only if `with-tests`)
-- `crud-specs/{Entity}.json` — the frontend generator's input
-- **The entity file itself**, if `write-entity-attributes` was confirmed: `#[ApiResource(operations: [...])]` and (if there are searchable fields) `#[ApiFilter(SearchFilter::class, ...)]`, added via AST manipulation ([`nikic/php-parser`](https://github.com/nikic/PHP-Parser)'s format-preserving printer — the same technique `make:entity` uses internally) so the rest of the file is untouched. If the entity already has one of these attributes, or `write-entity-attributes` was declined, the block is printed instead for you to paste in by hand.
-- **`config/packages/framework.yaml`**: a `framework.rate_limiter.{limiter}` entry for the export endpoint, inserted via targeted text insertion (comments/formatting elsewhere in the file are left untouched). Idempotent — a limiter that already exists by that name is left alone.
-- **`config/permissions/default.yaml`** (only if `with-access-control`): the permission item for this resource (`gated: true` + `actions: { create, edit, delete, bulk_delete, export_selected, export_all }`), added to (or created in) a `Master` section. If an item with that `key` already exists, only its missing pieces (`gated: true` and/or missing action keys) are filled in — existing fields, including custom action labels, are left untouched. A brand-new item gets a placeholder `href`/`icon` you'll want to review.
+- `src/Controller/{Entity}ExportDataController.php` — endpoint data export CSV
+  (`/api/{prefix}/export-data`, dibatasi rate limiter, mengembalikan JSON — frontend yang
+  mengubahnya jadi file CSV yang bisa diunduh)
+- `src/State/CurrentUser{Entity}Extension.php` (hanya kalau `owner-property` diisi) — membatasi
+  `GetCollection`/`Get` ke baris milik user saat ini
+- `tests/Unit/Service/{Entity}ServiceTest.php` (hanya kalau `with-tests` dipilih)
+- `crud-specs/{Entity}.json` — input untuk generator frontend, termasuk `apiResourcePath` (URI
+  ApiPlatform sebenarnya untuk resource ini, mis. `/api/categories`) yang **wajib** dibaca apa
+  adanya oleh `@kematjaya/crud-ui-generator`, bukan diturunkan/ditebak dari `permissionPrefix`
+- **File entity itu sendiri**, kalau `write-entity-attributes` dikonfirmasi:
+  `#[ApiResource(operations: [...])]` dan (kalau ada field searchable)
+  `#[ApiFilter(SearchFilter::class, ...)]`, ditambahkan lewat manipulasi AST (printer
+  format-preserving dari [`nikic/php-parser`](https://github.com/nikic/PHP-Parser) — teknik yang
+  sama dipakai `make:entity` secara internal) sehingga bagian lain file tidak tersentuh. Kalau
+  entity sudah punya salah satu atribut ini, atau `write-entity-attributes` ditolak, blok
+  kodenya akan dicetak saja untuk Anda tempel manual.
+- **`config/packages/framework.yaml`**: entri `framework.rate_limiter.{limiter}` untuk endpoint
+  export, disisipkan lewat penyisipan teks bertarget (komentar/format lain di file tidak
+  tersentuh). Idempotent — limiter dengan nama yang sudah ada dibiarkan apa adanya.
+- **`config/permissions/default.yaml`** (hanya kalau `with-access-control`): item permission
+  untuk resource ini (`gated: true` + `actions: { create, edit, delete, bulk_delete,
+  export_selected, export_all }`), ditambahkan ke (atau dibuat di) bagian `Master`. Kalau item
+  dengan `key` tersebut sudah ada, hanya bagian yang belum ada yang dilengkapi (`gated: true`
+  dan/atau action key yang hilang) — field lain, termasuk label action custom, tidak tersentuh.
+  Item baru mendapat `href`/`icon` placeholder yang perlu Anda tinjau ulang.
 
-If either config file is missing, or its structure isn't recognized, the writer falls back to
-printing the block for you to paste in by hand instead of failing the whole command — check the
-printed next-steps either way.
+Kalau salah satu file config di atas tidak ditemukan, atau strukturnya tidak dikenali, writer
+akan mencetak bloknya saja untuk Anda tempel manual, bukan menggagalkan seluruh command — tetap
+cek next-steps yang dicetak di kedua kondisi.
 
-## 5. Remaining manual steps (printed after generation)
+## 5. Langkah manual yang tersisa (dicetak setelah generate)
 
-- After the permission key is in place, run `bin/console kematjaya:access-control:sync` (if `with-access-control`).
-- Review the Service if the entity's field order might not match the Input DTO's.
+- Setelah permission key ada, jalankan `bin/console kematjaya:access-control:sync` (kalau
+  `with-access-control`).
+- Tinjau ulang Service kalau urutan field entity mungkin tidak cocok dengan Input DTO.
 
-## 6. Generate the frontend (`@kematjaya/crud-ui-generator`)
+## 6. Generate frontend-nya (`@kematjaya/crud-ui-generator`)
 
-The `crud-specs/{Entity}.json` sidecar from step 4 is consumed by
-[`@kematjaya/crud-ui-generator`](https://www.npmjs.com/package/@kematjaya/crud-ui-generator), a
-Next.js CRUD frontend generator published to npm — source lives in
-[`js/`](https://github.com/kematjaya0/crud-maker-bundle/tree/master/js) of the
-`kematjaya/crud-maker-bundle` monorepo (a separate npm package, not composer/PHP — this bundle
-only produces the spec JSON it reads). It's a dev-time code generator (like Plop/Hygen), not a
-runtime component library.
+Sidecar `crud-specs/{Entity}.json` dari langkah 4 dikonsumsi oleh
+[`@kematjaya/crud-ui-generator`](https://www.npmjs.com/package/@kematjaya/crud-ui-generator),
+generator frontend CRUD untuk Next.js yang dipublikasikan ke npm — sumbernya ada di
+[`js/`](https://github.com/kematjaya0/crud-maker-bundle/tree/master/js) di monorepo
+`kematjaya/crud-maker-bundle` (paket npm terpisah, bukan composer/PHP — bundle ini hanya
+menghasilkan spec JSON yang dibacanya). Generator ini dijalankan saat development (seperti
+Plop/Hygen), bukan library komponen runtime.
 
-### Prerequisites
+### Prasyarat
 
-It targets projects that already follow this ecosystem's Next.js conventions — running it
-against a project missing these pieces produces files that don't compile until you add them:
+Generator ini menyasar project yang sudah mengikuti konvensi Next.js di ekosistem ini —
+menjalankannya pada project yang belum punya komponen-komponen berikut akan menghasilkan file
+yang tidak bisa di-compile sampai Anda menambahkannya:
 
-- `@kematjaya/bootstrap-ui-kit` for `ListPageCard`/`TextField`/`Button`/etc.
-- `@kematjaya/access-control-ui` for `usePermissions()`
-- `src/lib/http.ts`, `src/lib/bff.ts` (BFF proxy helpers — `authedBackend`, `validateOrigin`, `parseJson`, `jsonProblem`)
-- `src/lib/permissions.ts` exporting `requirePermission()`
-- `src/types/api.ts` + `src/types/api.generated.ts` (OpenAPI types via `openapi-typescript`)
+- `@kematjaya/bootstrap-ui-kit` untuk `ListPageCard`/`TextField`/`Button`/dll.
+- `@kematjaya/access-control-ui` untuk `usePermissions()`
+- `src/lib/http.ts`, `src/lib/bff.ts` (helper proxy BFF — `authedBackend`, `validateOrigin`, `parseJson`, `jsonProblem`)
+- `src/lib/permissions.ts` yang meng-export `requirePermission()`
+- `src/types/api.ts` + `src/types/api.generated.ts` (tipe dari OpenAPI via `openapi-typescript`)
 
-### Install & run
+### Instalasi & cara pakai
 
-No separate install needed for one-off use — `npx` fetches it on demand:
+Tidak perlu instalasi terpisah untuk pemakaian sekali pakai — `npx` akan mengambilnya otomatis:
 
 ```
-cd ../frontend   # or wherever the Next.js project lives
+cd ../frontend   # atau lokasi project Next.js-nya
 
-# 1. regenerate OpenAPI types — must run AFTER step 5's #[ApiResource]/#[ApiFilter] are in
-#    place on the backend entity, so the new resource's paths/schemas are included
+# 1. generate ulang tipe OpenAPI — HARUS dijalankan SETELAH #[ApiResource]/#[ApiFilter]
+#    dari langkah 5 sudah terpasang di entity backend, supaya path/schema resource baru ikut masuk
 npm run api:types
 
-# 2. generate the frontend CRUD (list/create/edit pages, table, form, BFF proxy routes)
+# 2. generate frontend CRUD-nya (halaman list/create/edit, tabel, form, BFF proxy routes)
 npx @kematjaya/crud-ui-generator ../backend/crud-specs/{Entity}.json --src src
 
-# 3. format the generated files (not run through Prettier automatically)
+# 3. format file hasil generate (tidak otomatis lewat Prettier)
 npm run format
 ```
 
-If you'd rather install it as a persistent dev dependency instead of using `npx` each time:
+Kalau lebih suka dipasang sebagai dev dependency permanen daripada `npx` setiap kali:
 
 ```
 npm install --save-dev @kematjaya/crud-ui-generator
 npx crud-ui-generate ../backend/crud-specs/{Entity}.json --src src
 ```
 
-### What gets generated
+### Apa saja yang di-generate
 
-Per entity (skipped if the file already exists — safe to re-run):
+Per entity (dilewati kalau file sudah ada — aman dijalankan ulang):
 
 - `app/dashboard/{entities}/page.tsx`, `new/page.tsx`, `[id]/edit/page.tsx`
 - `components/{entities}/{Entity}Table.tsx`, `{Entity}Form.tsx`, `use{Entities}Export.ts`
 - `lib/{entities}-query.ts`, `lib/{entities}-csv.ts`
 - `app/api/{entities}/route.ts`, `[id]/route.ts`, `export/route.ts` (BFF proxy)
 
-Shared, entity-agnostic UI primitives (written once, reused by every entity):
+Primitive UI bersama, tidak spesifik satu entity (ditulis sekali, dipakai ulang semua entity):
 `components/crud/DeleteConfirmModal.tsx`, `BulkActionsBar.tsx`, `PaginationBar.tsx`,
 `SearchPanel.tsx`, `ExportAllButton.tsx`.
 
-Appended to (multi-entity, idempotent — each entity gets one marker-guarded block):
-`lib/api-shapes.ts`, `lib/schemas.ts` (a Zod schema per entity), `types/api.ts`.
+Ditambahkan ke (multi-entity, idempotent — tiap entity dapat satu blok yang dijaga marker):
+`lib/api-shapes.ts`, `lib/schemas.ts` (satu Zod schema per entity), `types/api.ts`.
 
-### Caveats
+### Catatan penting
 
-- **Id type** comes from the spec's `idType` (`uuid`/`int`/`string`, read off the entity's actual id column) — older spec files without it default to `uuid`.
-- **List search only wires up the first `searchable` field** even if several are marked searchable in the spec (the export endpoint itself ORs across all of them).
-- **`textarea` fields are skipped** from the table/CSV export (long text) — everything else (`text`/`number`/`boolean`) becomes a column.
-- **Getters are assumed** on the entity/generated types, in the conventional `get{Field}()` shape.
+- **Tipe id** diambil dari `idType` di spec (`uuid`/`int`/`string`, dibaca dari kolom id
+  sebenarnya di entity) — spec lama tanpa field ini default ke `uuid`.
+- **Search di halaman list hanya menyambungkan field `searchable` pertama** walaupun beberapa
+  field ditandai searchable di spec (endpoint export sendiri meng-OR-kan semuanya).
+- **Field `textarea` dilewati** dari tabel/export CSV (teks panjang) — selain itu
+  (`text`/`number`/`boolean`) menjadi kolom.
+- **Getter diasumsikan ada** pada entity/tipe hasil generate, dalam bentuk konvensional
+  `get{Field}()`.
+- **Panggilan BFF ke backend selalu memakai `apiResourcePath` dari spec, bukan
+  `permissionPrefix`.** `permissionPrefix` cuma menamai route/folder frontend dan permission
+  key — nilainya bebas dan bisa berbeda dari URI plural asli ApiPlatform (contoh nyata: entity
+  `Category` yang di-generate dengan `permissionPrefix: "category"` tetap disajikan backend di
+  `/api/categories`, bukan `/api/category`). Kalau ini tidak diikuti dengan benar, GET/POST/dst.
+  dari frontend akan 404 walau kodenya terlihat benar — cek `apiResourcePath` di
+  `crud-specs/{Entity}.json` kalau menemukan gejala ini.
 
-See [`js/README.md`](https://github.com/kematjaya0/crud-maker-bundle/tree/master/js) in the
-monorepo (or the [npm page](https://www.npmjs.com/package/@kematjaya/crud-ui-generator)) for the
-full, up-to-date reference — this section may drift from a later published npm version.
+Lihat [`js/README.md`](https://github.com/kematjaya0/crud-maker-bundle/tree/master/js) di
+monorepo (atau [halaman npm](https://www.npmjs.com/package/@kematjaya/crud-ui-generator)) untuk
+referensi lengkap dan paling baru — bagian ini bisa saja tertinggal dari versi npm yang lebih
+baru.
 
-## Overriding the generator templates
+## Meng-override template generator
 
 ```yaml
 # config/packages/crud_generator.yaml
@@ -165,5 +203,5 @@ crud_maker_api:
         path: '%kernel.project_dir%/generator'
 ```
 
-Custom templates are looked up first, falling back to the bundle's own skeletons — you only
-need to override the ones you actually want to change.
+Template custom dicari lebih dulu, baru jatuh kembali ke skeleton bawaan bundle — Anda hanya
+perlu meng-override yang memang ingin diubah.

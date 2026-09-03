@@ -43,6 +43,24 @@ abstract class AbstractRenderer
         return LegacyInflector::pluralize($word);
     }
 
+    /**
+     * camelCase/PascalCase -> snake_case (e.g. "TestArticle" -> "test_article"). Mirrors
+     * ApiPlatform's own default `path_segment_name_generator` (`UnderscorePathSegmentNameGenerator`,
+     * `api_platform.metadata.path_segment_name_generator.underscore`), which derives a resource's
+     * default collection URI as `pluralize(tableize($shortName))` — same Doctrine Inflector, same
+     * order of operations. Used so a generated entity's default resource URI can be predicted
+     * *before* ApiPlatform itself resolves it (e.g. {@see \Kematjaya\CrudMakerApiBundle\Renderer\ApiCrudRenderer::buildSpecJson()}).
+     */
+    protected function tableize(string $word): string
+    {
+        if (null !== $this->inflector) {
+            return $this->inflector->tableize($word);
+        }
+
+        /** @phpstan-ignore method.staticCall */
+        return LegacyInflector::tableize($word);
+    }
+
     protected function singularize(string $word): string
     {
         if (null !== $this->inflector) {

@@ -68,6 +68,15 @@ export function build${entitiesPascal}ApiPath(state: ${entitiesPascal}Query): st
     return query ? \`/api/${entitiesKebab}?\${query}\` : '/api/${entitiesKebab}';
 }
 
+// The BFF's own route (above) is a free-to-choose frontend slug. The real backend resource
+// lives at a URI ApiPlatform derives from the entity name (see crud-specs/${spec.entity}.json's
+// "apiResourcePath") — used only by the BFF route handler's server-side call to the backend,
+// never by the browser.
+export function build${entitiesPascal}BackendPath(state: ${entitiesPascal}Query): string {
+    const query = buildParams(state).toString();
+    return query ? \`${spec.apiResourcePath}?\${query}\` : '${spec.apiResourcePath}';
+}
+
 export function clampPageToTotal(
     page: number,
     itemsPerPage: number,
