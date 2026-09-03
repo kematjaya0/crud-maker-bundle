@@ -18,17 +18,12 @@ function fieldMarkup(field: FieldSpec, entitiesKebab: string, autoFocus: boolean
     }
 
     if (field.type === 'boolean') {
-        return `                <div className="form-check mb-3">
-                    <input
-                        id="${id}"
-                        type="checkbox"
-                        className="form-check-input"
-                        {...register('${field.name}')}
-                    />
-                    <label htmlFor="${id}" className="form-check-label">
-                        ${label}
-                    </label>
-                </div>`;
+        return `                <CheckboxField
+                    id="${id}"
+                    label="${label}"
+                    error={errors.${field.name}}
+                    registration={register('${field.name}')}
+                />`;
     }
 
     if (field.type === 'number') {
@@ -73,11 +68,13 @@ export function form(spec: CrudSpec, names: Names): string {
     const { entityPascal, entityCamel, entitiesKebab } = names;
     const usesTextarea = spec.fields.some((f) => f.type === 'textarea');
     const usesText = spec.fields.some((f) => f.type === 'text' || f.type === 'number');
+    const usesBoolean = spec.fields.some((f) => f.type === 'boolean');
     const usesDate = spec.fields.some((f) => f.type === 'date');
     const usesDateTime = spec.fields.some((f) => f.type === 'datetime');
     const fieldComponents = [
         usesText ? 'TextField' : null,
         usesTextarea ? 'TextareaField' : null,
+        usesBoolean ? 'CheckboxField' : null,
         usesDate ? 'DateField' : null,
         usesDateTime ? 'DateTimeField' : null
     ]

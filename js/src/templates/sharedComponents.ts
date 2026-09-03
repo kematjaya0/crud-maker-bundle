@@ -424,7 +424,7 @@ export function SearchPanel({
 `;
 
 export const filterPanel = `import { useId } from 'react';
-import { Button } from '@kematjaya/bootstrap-ui-kit';
+import { Button, Input, Select } from '@kematjaya/bootstrap-ui-kit';
 
 type FilterFieldDef =
     | { name: string; label: string; kind: 'text' }
@@ -488,9 +488,8 @@ export function FilterPanel({
                             {field.label}
                         </label>
                         {field.kind === 'boolean' ? (
-                            <select
+                            <Select
                                 id={\`\${idPrefix}-\${field.name}\`}
-                                className="form-select"
                                 name={field.name}
                                 defaultValue={values[field.name] ?? ''}
                                 disabled={controlsDisabled}
@@ -498,12 +497,11 @@ export function FilterPanel({
                                 <option value="">Any</option>
                                 <option value="true">Yes</option>
                                 <option value="false">No</option>
-                            </select>
+                            </Select>
                         ) : (
-                            <input
+                            <Input
                                 id={\`\${idPrefix}-\${field.name}\`}
                                 type={field.kind === 'number' ? 'number' : 'text'}
-                                className="form-control"
                                 name={field.name}
                                 defaultValue={values[field.name] ?? ''}
                                 placeholder={field.label}
