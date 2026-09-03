@@ -141,6 +141,50 @@ YAML;
         self::assertSame($written, $again);
     }
 
+    public function testMatchesFileIndentationDeeperThanTheDefaultTwoSpaceScheme(): void
+    {
+        // Some hand-written manifests indent more generously than the writer's own default
+        // (section marker at 4, "items:" at 6, item marker at 10, item fields at 12) — the
+        // writer must match whatever the file actually uses, not assume its own convention,
+        // or the inserted section ends up misaligned with its siblings and breaks the YAML.
+        $source = <<<'YAML'
+sections:
+    - name: Overview
+      items:
+          - key: dashboard
+            label: Dashboard
+            href: /dashboard
+            icon: dashboard
+
+    - name: Administration
+      items:
+          - key: access_control
+            label: Access Control
+            href: /dashboard/admin/access-control
+            icon: bi-grid-3x3
+            roles: [ROLE_ADMIN]
+            gated: true
+            defaultRoles: [ROLE_USER]
+
+YAML;
+
+        $writer = new PermissionManifestWriter();
+        $result = $writer->addOrUpdateItem($source, 'Master', 'category', 'Categories', '/dashboard/category', 'bi-list', ['ROLE_USER'], self::ACTIONS);
+
+        // must stay parseable — a mismatched indent breaks the "Master" section's sibling
+        // relationship with "Overview"/"Administration" and makes the whole file invalid YAML.
+        $parsed = Yaml::parse($result);
+        self::assertSame(['Overview', 'Administration', 'Master'], array_column($parsed['sections'], 'name'));
+
+        $master = $parsed['sections'][2];
+        self::assertSame('category', $master['items'][0]['key']);
+        self::assertTrue($master['items'][0]['gated']);
+        self::assertSame(self::ACTIONS, $master['items'][0]['actions']);
+
+        // the new section's marker must land at the SAME column as its siblings
+        self::assertStringContainsString("\n    - name: Master\n", $result);
+    }
+
     public function testThrowsWhenSectionsKeyIsMissing(): void
     {
         $writer = new PermissionManifestWriter();
