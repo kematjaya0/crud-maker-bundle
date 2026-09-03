@@ -1,17 +1,25 @@
 import type { CrudSpec } from '../spec.js';
 import type { Names } from '../naming.js';
-import { searchField } from '../naming.js';
+import { filterableFields } from '../naming.js';
 
 export function queryLib(spec: CrudSpec, names: Names): string {
     const { entitiesKebab, entitiesPascal, entitiesCamel } = names;
-    const field = searchField(spec);
+    const fields = filterableFields(spec);
     const constPrefix = entitiesCamel.toUpperCase();
+
+    const typeFields = fields.map((f) => `    ${f.name}: string;`).join('\n');
+    const parseFields = fields
+        .map((f) => `        ${f.name}: searchParams.get('${f.name}')?.trim() ?? '',`)
+        .join('\n');
+    const paramFields = fields
+        .map((f) => `    if (state.${f.name}) params.set('${f.name}', state.${f.name});`)
+        .join('\n');
 
     return `export const ${constPrefix}_PAGE_SIZES = [10, 20, 30, 50] as const;
 export const ${constPrefix}_DEFAULT_PAGE_SIZE = 30;
 
 export type ${entitiesPascal}Query = {
-${field !== null ? '    search: string;\n' : ''}    page: number;
+${typeFields ? typeFields + '\n' : ''}    page: number;
     itemsPerPage: number;
 };
 
@@ -29,7 +37,7 @@ function isAllowedPageSize(
 
 export function parse${entitiesPascal}Query(searchParams: URLSearchParams): ${entitiesPascal}Query {
     const state: ${entitiesPascal}Query = {
-${field !== null ? `        search: searchParams.get('${field}')?.trim() ?? '',\n` : ''}        page: parsePositiveInteger(searchParams.get('page')) ?? 1,
+${parseFields ? parseFields + '\n' : ''}        page: parsePositiveInteger(searchParams.get('page')) ?? 1,
         itemsPerPage: ${constPrefix}_DEFAULT_PAGE_SIZE
     };
     const pageSize = parsePositiveInteger(searchParams.get('itemsPerPage'));
@@ -40,7 +48,7 @@ ${field !== null ? `        search: searchParams.get('${field}')?.trim() ?? '',\
 
 function buildParams(state: ${entitiesPascal}Query): URLSearchParams {
     const params = new URLSearchParams();
-${field !== null ? `    if (state.search) params.set('${field}', state.search);\n` : ''}    if (state.page !== 1) params.set('page', String(state.page));
+${paramFields ? paramFields + '\n' : ''}    if (state.page !== 1) params.set('page', String(state.page));
     if (state.itemsPerPage !== ${constPrefix}_DEFAULT_PAGE_SIZE) {
         params.set('itemsPerPage', String(state.itemsPerPage));
     }

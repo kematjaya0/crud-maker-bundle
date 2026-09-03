@@ -1,4 +1,4 @@
-import type { CrudSpec } from './spec.js';
+import type { CrudSpec, FieldSpec } from './spec.js';
 
 export type Names = {
     /** PascalCase singular entity name, e.g. "TestArticle" (verbatim from spec.entity). */
@@ -31,14 +31,16 @@ export function namesFromSpec(spec: CrudSpec): Names {
     return { entityPascal, entityCamel, entitiesKebab, entitiesPascal, entitiesCamel };
 }
 
-/** The single field used for the search box / list-view SearchFilter query param, if any. */
-export function searchField(spec: CrudSpec): string | null {
-    return spec.fields.find((f) => f.searchable)?.name ?? null;
-}
-
-/** All searchable field names, used by the export endpoint's OR-search. */
-export function searchableFields(spec: CrudSpec): string[] {
-    return spec.fields.filter((f) => f.searchable).map((f) => f.name);
+/**
+ * Fields rendered as controls in the list view's Filter panel: every `searchable` field except
+ * `textarea` (long text doesn't make a sensible filter input), mirroring `displayFields()`'s
+ * exclusion. All of these are wired into the list query and AND-combined. The CSV export
+ * endpoint's OR-search (against every `searchable` field, textarea included) is a separate,
+ * server-side-only concept — it reuses this list's first filterable field's current value as
+ * its convenience search text (see `useExport.ts` / `bffRoutes.ts`'s `exportRoute`).
+ */
+export function filterableFields(spec: CrudSpec): FieldSpec[] {
+    return spec.fields.filter((f) => f.searchable && f.type !== 'textarea');
 }
 
 /** "createdAt" -> "Created At", "TestArticle" -> "Test Article". */

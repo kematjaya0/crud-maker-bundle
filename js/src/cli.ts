@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { join, resolve } from 'node:path';
 import { loadSpec } from './spec.js';
-import { namesFromSpec, searchField, searchableFields } from './naming.js';
+import { filterableFields, namesFromSpec } from './naming.js';
 import { appendBlock, appendBlockWithImport, newLog, writeIfMissing, writeNewFile, type WriteLog } from './write.js';
 import * as shared from './templates/sharedComponents.js';
 import { editPage, listPage, newPage } from './templates/pages.js';
@@ -73,8 +73,8 @@ function main(): void {
     writeIfMissing(join(cruddir, 'BulkActionsBar.tsx'), shared.bulkActionsBar, log);
     writeIfMissing(join(cruddir, 'PaginationBar.tsx'), shared.paginationBar, log);
     writeIfMissing(join(cruddir, 'ExportAllButton.tsx'), shared.exportAllButton, log);
-    if (null !== searchField(spec)) {
-        writeIfMissing(join(cruddir, 'SearchPanel.tsx'), shared.searchPanel, log);
+    if (filterableFields(spec).length > 0) {
+        writeIfMissing(join(cruddir, 'FilterPanel.tsx'), shared.filterPanel, log);
     }
 
     const dashDir = join(src, 'app', 'dashboard', names.entitiesKebab);
@@ -127,8 +127,9 @@ function main(): void {
     console.log(`  1. Run the backend maker's printed next-steps (ApiResource/ApiFilter attributes, permission keys, rate limiter config).`);
     console.log(`  2. Run "npm run api:types" in the frontend project so src/types/api.ts's paths/components lookups resolve.`);
     console.log(`  3. Confirm the OpenAPI collection path is "/api/${names.entitiesKebab}" — if the entity's #[ApiResource] uses a custom uriTemplate, fix the "paths[...]" lookups in the appended src/types/api.ts block by hand.`);
-    if (searchableFields(spec).length > 1) {
-        console.log(`  4. Note: multiple searchable fields were configured (${searchableFields(spec).join(', ')}); the list view's single search box only queries by "${searchField(spec)}" (ApiPlatform SearchFilter's per-property param convention doesn't support one box matching several properties). The export endpoint does OR across all of them.`);
+    const excludedTextareaFields = spec.fields.filter((f) => f.searchable && f.type === 'textarea').map((f) => f.name);
+    if (excludedTextareaFields.length > 0) {
+        console.log(`  4. Note: "${excludedTextareaFields.join(', ')}" ${excludedTextareaFields.length > 1 ? 'are' : 'is'} marked searchable but excluded from the generated Filter panel (long text isn't a sensible filter input) — same exclusion as table/CSV columns.`);
     }
     console.log(`  Id type: "${spec.idType}" (from the spec's "idType") — validId() in the generated app/api/${names.entitiesKebab}/[id]/route.ts was generated to match.`);
     console.log(`  Run "npm run format" afterwards — generated files aren't pre-formatted to this project's Prettier config.`);

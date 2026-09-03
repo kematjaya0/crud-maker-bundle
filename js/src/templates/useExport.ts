@@ -1,10 +1,12 @@
 import type { CrudSpec } from '../spec.js';
 import type { Names } from '../naming.js';
-import { searchField } from '../naming.js';
+import { filterableFields } from '../naming.js';
 
 export function useExportHook(spec: CrudSpec, names: Names): string {
     const { entityPascal, entitiesPascal, entitiesCamel, entitiesKebab } = names;
-    const field = searchField(spec);
+    // Reuses the filter panel's first field as the export endpoint's OR-search convenience
+    // text — it must be a property that actually exists on `{Entities}Query`.
+    const field = filterableFields(spec)[0]?.name ?? null;
 
     return `import { useState } from 'react';
 import { build${entitiesPascal}Csv } from '@/lib/${entitiesKebab}-csv';
@@ -96,7 +98,7 @@ export function use${entitiesPascal}Export() {
     async function exportAll(query: ${entitiesPascal}Query): Promise<ExportResult> {
         setExportingAll(true);
         const params = new URLSearchParams();
-${field !== null ? "        if ('' !== query.search) params.set('search', query.search);\n" : ''}        const path = params.size
+${field !== null ? `        if ('' !== query.${field}) params.set('search', query.${field});\n` : ''}        const path = params.size
             ? \`/api/${entitiesKebab}/export?\${params.toString()}\`
             : '/api/${entitiesKebab}/export';
 

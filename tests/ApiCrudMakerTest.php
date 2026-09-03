@@ -331,7 +331,7 @@ final class ApiCrudMakerTest extends WebTestCase
                 'permission-prefix' => 'test-legacy-articles',
                 'with-access-control' => true,
                 'with-tests' => false,
-                'searchable-fields' => 'headline',
+                'searchable-fields' => 'headline,viewCount,featured',
                 'write-entity-attributes' => true,
             ]);
 
@@ -347,7 +347,9 @@ final class ApiCrudMakerTest extends WebTestCase
             self::assertStringContainsString('use ApiPlatform\Metadata\ApiResource;', $newContents);
             self::assertStringContainsString('use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;', $newContents);
             self::assertStringContainsString('#[ApiResource(', $newContents);
-            self::assertStringContainsString("#[ApiFilter(SearchFilter::class, properties: ['headline' => 'partial'])]", $newContents);
+            // text fields keep the LIKE-based 'partial' strategy; number/boolean fields switch
+            // to 'exact' (SearchFilter's partial/start/end/word_start strategies are string-only).
+            self::assertStringContainsString("#[ApiFilter(SearchFilter::class, properties: ['headline' => 'partial', 'viewCount' => 'exact', 'featured' => 'exact'])]", $newContents);
             self::assertStringContainsString('is_granted(\'test-legacy-articles.delete\')', $newContents);
             // pre-existing code must survive untouched
             self::assertStringContainsString('public function setHeadline(string $headline): static', $newContents);

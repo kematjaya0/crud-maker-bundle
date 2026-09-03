@@ -23,6 +23,12 @@ class TestLegacyArticle
     #[ORM\Column(length: 120)]
     private ?string $headline = null;
 
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $viewCount = null;
+
+    #[ORM\Column(type: 'boolean', nullable: true)]
+    private ?bool $featured = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -36,6 +42,30 @@ class TestLegacyArticle
     public function setHeadline(string $headline): static
     {
         $this->headline = $headline;
+
+        return $this;
+    }
+
+    public function getViewCount(): ?int
+    {
+        return $this->viewCount;
+    }
+
+    public function setViewCount(?int $viewCount): static
+    {
+        $this->viewCount = $viewCount;
+
+        return $this;
+    }
+
+    public function getFeatured(): ?bool
+    {
+        return $this->featured;
+    }
+
+    public function setFeatured(?bool $featured): static
+    {
+        $this->featured = $featured;
 
         return $this;
     }

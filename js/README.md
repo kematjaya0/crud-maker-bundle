@@ -56,9 +56,19 @@ Appended to (multi-entity, idempotent — each entity gets one marker-guarded bl
 ## Assumptions / caveats
 
 - **Id type comes from the spec's `idType`** (`uuid`/`int`/`string`, written by `ApiCrudRenderer::detectIdType()` off the entity's actual id column) — `validId()` in the generated `[id]/route.ts` and the `is{Entity}` type guard in `api-shapes.ts` are generated to match. Older spec files without `idType` default to `uuid`.
-- **The list search box only searches one field.** If more than one field is marked
-  `searchable` in the spec, the list view (backed by ApiPlatform's `SearchFilter`, one query
-  param per property) only wires up the first one. The export endpoint ORs across all of them.
+- **The list filter panel covers every `searchable` field except `textarea`.**
+  `naming.ts`'s `filterableFields()` renders one control per such field — text/number inputs
+  (ApiPlatform `SearchFilter` `'partial'`/`'exact'` strategy) and a boolean Any/Yes/No select
+  (`'exact'`) — all AND-combined into the same list query (one query param per property, backed
+  by a single `#[ApiFilter(SearchFilter::class, properties: [...])]` on the entity). The table's
+  collapsible Filter button toggles a `crud-filter-collapse` panel around the generated
+  `FilterPanel` component, and only appears when at least one field is filterable.
+  `searchable` `textarea` fields are excluded (same exclusion as table/CSV columns) — `cli.ts`
+  prints a next-steps note when that applies.
+- **CSV export ("Export all") only reflects the first filterable field's current value**, sent as
+  a single OR-search `search` param the backend matches across *every* `searchable` field
+  (textarea included) server-side — a separate, broader contract from the list's precise
+  AND-per-property filtering. The other filter panel fields don't currently narrow the export.
 - **The table/CSV export skip `textarea` fields** (long text), mirroring the hand-written Notes
   feature (shows `title`, not `body`). Everything else (`text`/`number`/`boolean`) becomes a
   column.

@@ -206,6 +206,7 @@ class ApiCrudRenderer extends AbstractRenderer
                 $permissionPrefix,
                 $withAccessControl,
                 $searchableFields,
+                $fields,
             );
             $attributesWritten = null === $attributeWriteError;
         }
@@ -219,6 +220,7 @@ class ApiCrudRenderer extends AbstractRenderer
             null !== $ownerClassDetails,
             $specPath,
             $searchableFields,
+            $fields,
             $sharedVars['export_route_path'],
             $sharedVars['export_limiter_name'],
             $attributesWritten,
@@ -239,7 +241,9 @@ class ApiCrudRenderer extends AbstractRenderer
      * paste-in-by-hand instructions in that case, rather than treating it as a hard error for
      * the whole `make:kmj-api-crud` run.
      *
-     * @param list<string> $searchableFields
+     * @param list<string>               $searchableFields
+     * @param list<array<string, mixed>> $fields as built by {@see buildFields()} — only the
+     *                                    `name`/`spec_type` keys are read here
      */
     private function tryWriteEntityAttributes(
         Generator $generator,
@@ -249,6 +253,7 @@ class ApiCrudRenderer extends AbstractRenderer
         string $permissionPrefix,
         bool $withAccessControl,
         array $searchableFields,
+        array $fields,
     ): ?string {
         $entityFullClassName = $entityClassDetails->getFullName();
 
@@ -274,6 +279,7 @@ class ApiCrudRenderer extends AbstractRenderer
             $permissionPrefix,
             $withAccessControl,
             $searchableFields,
+            $fields,
         );
 
         try {
@@ -461,7 +467,10 @@ class ApiCrudRenderer extends AbstractRenderer
      * ({@see tryWriteEntityAttributes}) and the manual paste-in-by-hand next-steps text
      * ({@see buildNextSteps}), so the two never drift apart.
      *
-     * @param list<string> $searchableFields
+     * @param list<string>               $searchableFields
+     * @param list<array<string, mixed>> $fields as built by {@see buildFields()} — used to look
+     *                                    up each searchable field's `spec_type` for
+     *                                    {@see searchFilterStrategy()}
      * @return array{0: string, 1: list<string>}
      */
     private function buildEntityAttributeCode(
@@ -470,6 +479,7 @@ class ApiCrudRenderer extends AbstractRenderer
         string $permissionPrefix,
         bool $withAccessControl,
         array $searchableFields,
+        array $fields,
     ): array {
         $useStatements = [
             'ApiPlatform\\Metadata\\ApiResource',
@@ -497,12 +507,26 @@ class ApiCrudRenderer extends AbstractRenderer
         ];
 
         if ([] !== $searchableFields) {
+            $specTypeByName = array_column($fields, 'spec_type', 'name');
             $useStatements[] = 'ApiPlatform\\Metadata\\ApiFilter';
             $useStatements[] = 'ApiPlatform\\Doctrine\\Orm\\Filter\\SearchFilter';
-            $lines[] = '#[ApiFilter(SearchFilter::class, properties: ['.implode(', ', array_map(static fn (string $f) => "'".$f."' => 'partial'", $searchableFields)).'])]';
+            $lines[] = '#[ApiFilter(SearchFilter::class, properties: ['.implode(', ', array_map(
+                fn (string $f) => "'".$f."' => '".$this->searchFilterStrategy((string) ($specTypeByName[$f] ?? 'text'))."'",
+                $searchableFields,
+            )).'])]';
         }
 
         return [implode("\n", $lines), $useStatements];
+    }
+
+    /**
+     * ApiPlatform's `SearchFilter` `'partial'`/`'start'`/`'end'`/`'word_start'` strategies are
+     * string-oriented (LIKE-based); `number`/`boolean` columns want `'exact'` instead. `text` and
+     * `textarea` both stay `'partial'`.
+     */
+    private function searchFilterStrategy(string $specType): string
+    {
+        return in_array($specType, ['number', 'boolean'], true) ? 'exact' : 'partial';
     }
 
     private function resolveOwnerClass(Generator $generator, ClassNameDetails $entityClassDetails, string $ownerProperty): ClassNameDetails
@@ -721,7 +745,10 @@ class ApiCrudRenderer extends AbstractRenderer
     }
 
     /**
-     * @param list<string> $searchableFields
+     * @param list<string>               $searchableFields
+     * @param list<array<string, mixed>> $fields as built by {@see buildFields()}, forwarded to
+     *                                    {@see buildEntityAttributeCode()} for the manual
+     *                                    paste-in-by-hand instructions text
      * @return list<string>
      */
     private function buildNextSteps(
@@ -733,6 +760,7 @@ class ApiCrudRenderer extends AbstractRenderer
         bool $hasOwner,
         string $specPath,
         array $searchableFields,
+        array $fields,
         string $exportRoutePath,
         string $exportLimiterName,
         bool $attributesWritten,
@@ -749,7 +777,7 @@ class ApiCrudRenderer extends AbstractRenderer
                 '',
             ];
         } else {
-            [$attributeCode] = $this->buildEntityAttributeCode($inputClassDetails, $processorClassDetails, $permissionPrefix, $withAccessControl, $searchableFields);
+            [$attributeCode] = $this->buildEntityAttributeCode($inputClassDetails, $processorClassDetails, $permissionPrefix, $withAccessControl, $searchableFields, $fields);
             $indented = implode("\n", array_map(static fn (string $line) => '    '.$line, explode("\n", $attributeCode)));
 
             $steps = [

@@ -1,15 +1,16 @@
 import type { CrudSpec } from '../spec.js';
 import type { Names } from '../naming.js';
-import { lowerWords, searchField } from '../naming.js';
+import { filterableFields, lowerWords } from '../naming.js';
 
 export function entityHook(spec: CrudSpec, names: Names): string {
     const { entityPascal, entitiesPascal, entitiesKebab } = names;
-    const field = searchField(spec);
+    const filters = filterableFields(spec);
     const pluralNoun = lowerWords(entitiesPascal);
 
-    const hasSearchLine = field
-        ? `    const hasSearch = Boolean(query.search);\n`
-        : `    const hasSearch = false;\n`;
+    const hasFiltersLine =
+        filters.length > 0
+            ? `    const hasFilters = [${filters.map((f) => `query.${f.name}`).join(', ')}].some(Boolean);\n`
+            : `    const hasFilters = false;\n`;
 
     return `import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -123,8 +124,8 @@ export function use${entitiesPascal}() {
         router.push(build${entitiesPascal}Href(nextQuery));
     }
 
-${hasSearchLine}    const trueEmpty = !loading && !error && !hasSearch && totalItems === 0;
-    const filteredEmpty = !loading && !error && hasSearch && totalItems === 0;
+${hasFiltersLine}    const trueEmpty = !loading && !error && !hasFilters && totalItems === 0;
+    const filteredEmpty = !loading && !error && hasFilters && totalItems === 0;
     const hasItems = !loading && items.length > 0;
     const selectedItems = useMemo(
         () => items.filter((item) => selectedIds.has(item.id)),
@@ -242,7 +243,7 @@ ${hasSearchLine}    const trueEmpty = !loading && !error && !hasSearch && totalI
         totalItems,
         loading,
         error,
-        hasSearch,
+        hasFilters,
         trueEmpty,
         filteredEmpty,
         hasItems,

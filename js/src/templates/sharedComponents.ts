@@ -4,6 +4,10 @@
  * ExportAllButton — all under src/components/notes/). Written once per frontend project into
  * src/components/crud/ (skipped on repeat runs / for later entities) so N generated entities
  * don't each carry a byte-identical copy.
+ *
+ * `filterPanel` is the generalization of `searchPanel` to N AND-combined fields (text/number/
+ * boolean) — `cli.ts` now writes `filterPanel` for any entity with a filterable field.
+ * `searchPanel` is kept as a standalone primitive (no longer auto-written) rather than deleted.
  */
 
 export const deleteConfirmModal = `'use client';
@@ -403,6 +407,147 @@ export function SearchPanel({
                         aria-label={\`Active filter: \${trimmedValue}\`}
                     >
                         <span>Search: {trimmedValue}</span>
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-link p-0"
+                            onClick={onClear}
+                            disabled={pending}
+                        >
+                            Clear all filters
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+`;
+
+export const filterPanel = `import { useId } from 'react';
+import { Button } from '@kematjaya/bootstrap-ui-kit';
+
+type FilterFieldDef =
+    | { name: string; label: string; kind: 'text' }
+    | { name: string; label: string; kind: 'number' }
+    | { name: string; label: string; kind: 'boolean' };
+
+type Props = {
+    fields: FilterFieldDef[];
+    values: Record<string, string>;
+    totalItems: number;
+    pluralNoun: string;
+    pending: boolean;
+    disabled: boolean;
+    onApply: (values: Record<string, string>) => void;
+    onClear: () => void;
+};
+
+function summary(totalItems: number, pluralNoun: string, filtered: boolean) {
+    return filtered
+        ? \`\${totalItems} \${pluralNoun} match your filters\`
+        : \`\${totalItems} \${pluralNoun} total\`;
+}
+
+export function FilterPanel({
+    fields,
+    values,
+    totalItems,
+    pluralNoun,
+    pending,
+    disabled,
+    onApply,
+    onClear
+}: Props) {
+    const idPrefix = useId();
+    const activeFields = fields.filter((field) => values[field.name]);
+    const isFiltered = activeFields.length > 0;
+    const controlsDisabled = pending || disabled;
+
+    return (
+        <div className="crud-search-panel">
+            <form
+                className="crud-toolbar"
+                method="get"
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    const formData = new FormData(event.currentTarget);
+                    const next: Record<string, string> = {};
+                    for (const field of fields) {
+                        next[field.name] =
+                            formData.get(field.name)?.toString().trim() ?? '';
+                    }
+                    onApply(next);
+                }}
+            >
+                {fields.map((field) => (
+                    <div className="crud-search-field" key={field.name}>
+                        <label
+                            htmlFor={\`\${idPrefix}-\${field.name}\`}
+                            className="form-label mb-1"
+                        >
+                            {field.label}
+                        </label>
+                        {field.kind === 'boolean' ? (
+                            <select
+                                id={\`\${idPrefix}-\${field.name}\`}
+                                className="form-select"
+                                name={field.name}
+                                defaultValue={values[field.name] ?? ''}
+                                disabled={controlsDisabled}
+                            >
+                                <option value="">Any</option>
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        ) : (
+                            <input
+                                id={\`\${idPrefix}-\${field.name}\`}
+                                type={field.kind === 'number' ? 'number' : 'text'}
+                                className="form-control"
+                                name={field.name}
+                                defaultValue={values[field.name] ?? ''}
+                                placeholder={field.label}
+                                autoComplete="off"
+                                disabled={controlsDisabled}
+                            />
+                        )}
+                    </div>
+                ))}
+                <div className="crud-toolbar-actions">
+                    <Button type="submit" disabled={controlsDisabled}>
+                        Apply filters
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={(event) => {
+                            event.preventDefault();
+                            onClear();
+                        }}
+                        aria-label="Clear all filters"
+                        disabled={!isFiltered || pending}
+                    >
+                        Clear
+                    </Button>
+                </div>
+            </form>
+            <div className="crud-search-meta">
+                <p
+                    className="dash-card-subtitle m-0"
+                    role="status"
+                    aria-live="polite"
+                    aria-busy={pending}
+                >
+                    {pending ? 'Loading...' : summary(totalItems, pluralNoun, isFiltered)}
+                </p>
+                {isFiltered && (
+                    <div
+                        className="crud-filter-chip"
+                        aria-label="Active filters"
+                    >
+                        <span>
+                            {activeFields.length} filter
+                            {activeFields.length === 1 ? '' : 's'} active
+                        </span>
                         <button
                             type="button"
                             className="btn btn-sm btn-link p-0"

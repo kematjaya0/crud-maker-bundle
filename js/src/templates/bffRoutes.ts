@@ -1,6 +1,6 @@
 import type { CrudSpec, FieldSpec } from '../spec.js';
 import type { Names } from '../naming.js';
-import { displayFields, searchField } from '../naming.js';
+import { displayFields, filterableFields } from '../naming.js';
 
 function tsType(field: FieldSpec): string {
     if (field.type === 'number') return 'number';
@@ -93,7 +93,9 @@ export const revalidate = 0;
 
 export function exportRoute(spec: CrudSpec, names: Names): string {
     const { entityPascal, entitiesPascal, entitiesKebab } = names;
-    const field = searchField(spec);
+    // Reuses the filter panel's first field as the export endpoint's OR-search convenience
+    // text — it must be a property that actually exists on `{Entities}Query`.
+    const field = filterableFields(spec)[0]?.name ?? null;
     const cols = displayFields(spec).map((f) => f.name);
     if (null !== spec.timestampField && !cols.includes(spec.timestampField)) {
         cols.push(spec.timestampField);
@@ -156,7 +158,7 @@ ${field ? `    const params = new URLSearchParams();
 
 export async function GET(request: NextRequest): Promise<Response> {
     try {
-${field ? `        const { search } = parse${entitiesPascal}Query(request.nextUrl.searchParams);
+${field ? `        const { ${field}: search } = parse${entitiesPascal}Query(request.nextUrl.searchParams);
         const response = await authedBackend(buildExportPath(search));` : `        const response = await authedBackend(buildExportPath());`}
         if (!response.ok) return response;
 
