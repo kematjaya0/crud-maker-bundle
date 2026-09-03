@@ -6,7 +6,11 @@ services:
     filter_type_renderer:
         alias: Kematjaya\CrudMakerBundle\Twig\Renderer\FilterTypeRenderer
         public: true
-        
+
+    code_formatter:
+        alias: Kematjaya\CrudMakerBundle\Twig\Formatter\CodeFormatter
+        public: true
+
     generator:
         class: Symfony\Bundle\MakerBundle\Generator
         public: true

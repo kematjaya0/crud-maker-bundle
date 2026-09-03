@@ -46,7 +46,7 @@ class CrudMakerBundleTest extends WebTestCase
         ]);
         $entityHelper = new DoctrineHelper('Entity', $registry);
         
-        $maker = new FilterMaker($entityHelper, $container->get('filter_type_renderer'));
+        $maker = new FilterMaker($entityHelper, $container->get('filter_type_renderer'), $container->get('code_formatter'));
         $this->assertTrue(true);
 
         return $maker;
