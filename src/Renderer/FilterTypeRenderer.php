@@ -6,9 +6,9 @@
 
 namespace Kematjaya\CrudMakerBundle\Renderer;
 
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
-use Symfony\Bundle\MakerBundle\Str;
 
 /**
  * @package App\Maker\Renderer
@@ -17,57 +17,117 @@ use Symfony\Bundle\MakerBundle\Str;
  */
 final class FilterTypeRenderer extends AbstractRenderer
 {
-    public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ClassNameDetails $boundClassDetails = null, string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = [])
+    /**
+     * Doctrine type yang tidak bisa difilter
+     */
+    const SKIPPED_TYPES = ['json', 'array', 'simple_array', 'object', 'blob', 'binary'];
+    
+    /**
+     * Render filter type class
+     * 
+     * @param Generator             $generator
+     * @param ClassNameDetails      $formClassDetails
+     * @param array                 $formFields       EntityDetails::getFormFields()
+     * @param ClassNameDetails|null $boundClassDetails
+     * @param string|null           $identifierField
+     * @param array                 $extraUseClasses
+     * @param array                 $constraintClasses
+     * @param array                 $fieldMappings    EntityDetails::getDisplayFields(), untuk menentukan tipe filter
+     */
+    public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ?ClassNameDetails $boundClassDetails = null, ?string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = [], array $fieldMappings = [])
     {
-        $fieldTypeUseStatements = [];
-        $fields = [];
-        foreach ($formFields as $name => $fieldTypeOptions) {
-            $fieldTypeOptions = ($fieldTypeOptions) ? ['type' => null, 'options_code' => null] : ['type' => 'string'];
-            
-            $fields[$name] = $this->getFieldTypeOptions($fieldTypeOptions);
-            $fieldTypeUseStatements[] = $fieldTypeOptions['type'];
-        }
-
-        $mergedTypeUseStatements = array_unique(array_merge($fieldTypeUseStatements, $extraUseClasses));
-        sort($mergedTypeUseStatements);
-        
         $generator->generateClass(
             $formClassDetails->getFullName(),
             $this->getPath('filter/Type.tpl.php'),
             [
                 'bounded_full_class_name' => $boundClassDetails ? $boundClassDetails->getFullName() : null,
                 'bounded_class_name' => $boundClassDetails ? $boundClassDetails->getShortName() : null,
-                'form_fields' => $fields,
-                'field_type_use_statements' => $mergedTypeUseStatements,
+                'form_fields' => $this->buildFilterFields($formFields, $fieldMappings, $identifierField),
+                'field_type_use_statements' => $extraUseClasses,
                 'constraint_use_statements' => $constraintClasses,
                 'identifier' => $identifierField
             ]
         );
     }
     
+    /**
+     * Filter fields: [name => ['type' => short filter type class, 'options_code' => string]]
+     * 
+     * @param  array       $formFields
+     * @param  array       $fieldMappings
+     * @param  string|null $identifierField
+     * @return array
+     */
+    public function buildFilterFields(array $formFields, array $fieldMappings = [], ?string $identifierField = null):array
+    {
+        $fields = [];
+        foreach ($formFields as $name => $fieldTypeOptions) {
+            if (null !== $identifierField && $name === $identifierField) {
+                continue;
+            }
+            
+            if (is_array($fieldTypeOptions) && EntityType::class === ($fieldTypeOptions['type'] ?? null)) {
+                $fields[$name] = $this->getEntityFieldTypeOptions($fieldTypeOptions);
+                continue;
+            }
+            
+            $mapping = $fieldMappings[$name] ?? null;
+            $doctrineType = null;
+            if (null !== $mapping) {
+                $doctrineType = is_array($mapping) ? ($mapping['type'] ?? null) : ($mapping->type ?? null);
+            }
+            
+            if (in_array($doctrineType, self::SKIPPED_TYPES, true)) {
+                continue;
+            }
+            
+            $fields[$name] = $this->getFieldTypeOptions(['type' => $doctrineType]);
+        }
+        
+        return $fields;
+    }
+    
     protected function getFieldTypeOptions(array $fieldTypeOptions)
     {
-        if (!isset($fieldTypeOptions['type'])) {
-            return $fieldTypeOptions;
-        }
-        
         switch ($fieldTypeOptions['type']) {
             case 'boolean':
-                $fieldTypeOptions['type'] = 'Filters\BooleanFilterType';
-                $fieldTypeOptions['options_code'] = "";
-                break;
-            case 'array':
-                $fieldTypeOptions['type'] = 'Filters\ChoiceFilterType';
-                $fieldTypeOptions['options_code'] = "'choices' => []";
-                break;
-            default:
-                $fieldTypeOptions['type'] = 'Filters\TextFilterType';
-                $fieldTypeOptions['options_code'] = "'condition_pattern' => FilterOperands::STRING_CONTAINS";
-                break;
+                return ['type' => 'BooleanFilterType', 'options_code' => ''];
+            case 'integer':
+            case 'smallint':
+            case 'bigint':
+            case 'decimal':
+            case 'float':
+                return ['type' => 'NumberFilterType', 'options_code' => ''];
+            case 'date':
+            case 'date_immutable':
+            case 'datetime':
+            case 'datetime_immutable':
+            case 'datetimetz':
+            case 'datetimetz_immutable':
+                return ['type' => 'DateRangeFilterType', 'options_code' => "'left_date_options' => ['widget' => 'single_text'],\n            'right_date_options' => ['widget' => 'single_text'],"];
         }
         
-        $fieldTypeOptions['type'] = Str::getShortClassName($fieldTypeOptions['type']);
+        return ['type' => 'TextFilterType', 'options_code' => "'condition_pattern' => FilterOperands::STRING_CONTAINS,"];
+    }
+    
+    /**
+     * Relation (many to one / many to many) memakai EntityFilterType
+     * 
+     * @param  array $fieldTypeOptions
+     * @return array
+     */
+    protected function getEntityFieldTypeOptions(array $fieldTypeOptions):array
+    {
+        $targetEntity = $fieldTypeOptions['extra_use_classes'][0] ?? null;
+        if (null === $targetEntity) {
+            return ['type' => 'TextFilterType', 'options_code' => "'condition_pattern' => FilterOperands::STRING_CONTAINS,"];
+        }
         
-        return $fieldTypeOptions;
+        $options = sprintf("'class' => \\%s::class,", ltrim($targetEntity, '\\'));
+        if (false !== strpos((string) ($fieldTypeOptions['options_code'] ?? ''), "'multiple' => true")) {
+            $options .= "\n            'multiple' => true,";
+        }
+        
+        return ['type' => 'EntityFilterType', 'options_code' => $options];
     }
 }

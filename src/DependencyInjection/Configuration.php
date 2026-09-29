@@ -66,6 +66,7 @@ class Configuration implements ConfigurationInterface
                 ->addDefaultsIfNotSet()
                     ->children()
                         ->scalarNode('path')->defaultValue(null)->end()
+                        ->scalarNode('theme')->defaultValue('bootstrap-4')->end()
                     ->end()
                 ->end()
             ->end();

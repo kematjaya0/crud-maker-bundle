@@ -1,0 +1,47 @@
+framework:
+    test: true
+    secret: test
+    http_method_override: false
+    handle_all_throwables: true
+    php_errors:
+        log: true
+    form: true
+    validation:
+        email_validation_mode: html5
+    csrf_protection: false
+
+twig:
+    default_path: '%kernel.project_dir%/templates'
+
+doctrine:
+    dbal:
+        url: 'sqlite:///:memory:'
+    orm:
+        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+        mappings:
+            App:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Entity'
+                prefix: 'App\Entity'
+
+maker:
+    root_namespace: App
+
+services:
+    App\Repository\:
+        resource: '%kernel.project_dir%/src/Repository'
+        autowire: true
+        autoconfigure: true
+
+    test.controller_renderer:
+        alias: Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer
+        public: true
+
+    test.form_factory:
+        alias: form.factory
+        public: true
+
+    test.filter_builder_updater:
+        alias: Spiriit\Bundle\FormFilterBundle\Filter\FilterBuilderUpdaterInterface
+        public: true

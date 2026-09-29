@@ -9,12 +9,11 @@ namespace Kematjaya\CrudMakerBundle\Renderer;
 use Kematjaya\CrudMakerBundle\Renderer\FilterTypeRenderer;
 use Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
-use Doctrine\Inflector\Inflector as LegacyInflector;
+use Doctrine\Inflector\Inflector;
 use Doctrine\Inflector\InflectorFactory;
 use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\Str;
-use Symfony\Bundle\MakerBundle\Util\ClassDetails;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 
 /**
@@ -37,23 +36,33 @@ class ControllerRenderer extends AbstractRenderer
      */
     private $filterTypeRenderer;
     
+    /**
+     * 
+     * @var Inflector
+     */
     private $inflector;
     
     public function __construct(ContainerBagInterface $bag, DoctrineHelper $doctrineHelper, FilterTypeRenderer $filterTypeRenderer) 
     {
         $this->filterTypeRenderer = $filterTypeRenderer;
         $this->doctrineHelper = $doctrineHelper;
-        
-        if (class_exists(InflectorFactory::class)) {
-            $this->inflector = InflectorFactory::create()->build();
-        }
+        $this->inflector = InflectorFactory::create()->build();
         
         parent::__construct($bag);
     }
     
-    public function generate(ClassNameDetails $entityClassDetails, Generator $generator, string $additionalNameSpace, string $theme, bool $includeFilter = false, bool $modalForm = false): ClassNameDetails
+    public function generate(ClassNameDetails $entityClassDetails, Generator $generator, ?string $additionalNameSpace, ?string $theme, bool $includeFilter = false, bool $modalForm = false): ClassNameDetails
     {
+        $additionalNameSpace = null === $additionalNameSpace || '' === trim($additionalNameSpace) ? '-' : trim($additionalNameSpace, " \\");
+        $theme = $theme ?: $this->config['templates']['theme'];
+        if (!in_array($theme, $this->getAvailableThemes(), true)) {
+            throw new \InvalidArgumentException(sprintf("theme '%s' not found, available: %s", $theme, implode(", ", $this->getAvailableThemes())));
+        }
+        
         $entityDoctrineDetails = $this->doctrineHelper->createDoctrineDetails($entityClassDetails->getFullName());
+        if (null === $entityDoctrineDetails) {
+            throw new \InvalidArgumentException(sprintf("'%s' is not a doctrine entity", $entityClassDetails->getFullName()));
+        }
 
         $repositoryVars = [];
         if (null !== $entityDoctrineDetails->getRepositoryClass()) {
@@ -83,10 +92,9 @@ class ControllerRenderer extends AbstractRenderer
             'Type'
         );
         
-        $classes = get_declared_classes();
-        if (!in_array($formClassDetails->getFullName(), $classes)) {
-            $formTypeRenderer = new FormTypeRenderer($generator);
-            $formTypeRenderer->render(
+        // form type yang sudah ada (walau belum di-load) tidak di-generate ulang
+        if (!class_exists($formClassDetails->getFullName())) {
+            (new FormTypeRenderer($generator))->render(
                 $formClassDetails,
                 $entityDoctrineDetails->getFormFields(),
                 $entityClassDetails
@@ -99,37 +107,44 @@ class ControllerRenderer extends AbstractRenderer
         $entityTwigVarPlural = Str::asTwigVariable($entityVarPlural);
         $entityTwigVarSingular = Str::asTwigVariable($entityVarSingular);
 
-        $additionalNameSpaceLower = "-" !== $additionalNameSpace ? implode(DIRECTORY_SEPARATOR, array_filter(explode("\\", strtolower($additionalNameSpace)))) : null;
-        $routeName = Str::asRouteName($controllerClassDetails->getRelativeNameWithoutSuffix());
-        $templatesPath = null !== $additionalNameSpaceLower ? $additionalNameSpaceLower . DIRECTORY_SEPARATOR . Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix()) : Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix());
+        $additionalNameSpaceLower = "-" !== $additionalNameSpace ? implode('/', array_filter(explode("\\", strtolower($additionalNameSpace)))) : null;
+        // namespace tambahan ikut di nama & path route agar tidak bentrok dengan controller tanpa namespace
+        $routeBase = ("-" !== $additionalNameSpace ? $additionalNameSpace . '\\' : '') . $controllerClassDetails->getRelativeNameWithoutSuffix();
+        $routeName = Str::asRouteName($routeBase);
+        $templatesPath = null !== $additionalNameSpaceLower ? $additionalNameSpaceLower . '/' . Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix()) : Str::asFilePath($controllerClassDetails->getRelativeNameWithoutSuffix());
         $filterClassNameDetails = null;
         $filterName = 'filter';
+        $identifier = $entityDoctrineDetails->getIdentifier();
+        $displayFields = $entityDoctrineDetails->getDisplayFields();
+        $filterFields = [];
         if ($includeFilter) {
             $filterClassNameDetails = $generator->createClassNameDetails(
                 $entityClassDetails->getRelativeNameWithoutSuffix(),
-                'Filter\\',
-                'FilterType'
+                $this->config['filter']['namespace_prefix'],
+                $this->config['filter']['suffix']
             );
+            $filterFields = $this->filterTypeRenderer->buildFilterFields($entityDoctrineDetails->getFormFields(), $displayFields, $identifier);
         }
         
         $templates = [
             '_delete_form' => [
                 'route_name' => $routeName,
                 'entity_twig_var_singular' => $entityTwigVarSingular,
-                'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
+                'entity_identifier' => $identifier,
             ],
             '_max_per_page' => [],
             '_filters' => [
                 'route_name' => $routeName,
-                'fields_skip' => [$entityDoctrineDetails->getIdentifier()],
-                'fields' => array_keys($entityDoctrineDetails->getDisplayFields()),
+                'fields_skip' => [$identifier],
+                'fields' => array_keys($displayFields),
+                'filter_fields' => array_keys($filterFields),
                 'filter_name' => $filterName,
                 'entity_twig_var_singular' => $entityTwigVarSingular
             ],
             'form' => [
                 'entity_class_name' => $entityClassDetails->getShortName(),
                 'entity_twig_var_singular' => $entityTwigVarSingular,
-                'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
+                'entity_identifier' => $identifier,
                 'route_name' => $routeName,
                 'is_modal' => $modalForm
             ],
@@ -137,24 +152,27 @@ class ControllerRenderer extends AbstractRenderer
                 'entity_class_name' => $entityClassDetails->getShortName(),
                 'entity_twig_var_plural' => $entityTwigVarPlural,
                 'entity_twig_var_singular' => $entityTwigVarSingular,
-                'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
-                'entity_fields' => $entityDoctrineDetails->getDisplayFields(),
+                'entity_identifier' => $identifier,
+                'entity_fields' => $displayFields,
                 'templates_path' => $templatesPath,
                 'use_filter' => $filterClassNameDetails ? true : false,
                 'filter_name' => $filterName,
                 'route_name' => $routeName,
-                'fields_skip' => [$entityDoctrineDetails->getIdentifier()],
+                'fields_skip' => [$identifier],
                 'is_modal' => $modalForm,
             ],
             'show' => [
                 'entity_class_name' => $entityClassDetails->getShortName(),
                 'entity_twig_var_singular' => $entityTwigVarSingular,
-                'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
-                'entity_fields' => $entityDoctrineDetails->getDisplayFields(),
+                'entity_identifier' => $identifier,
+                'entity_fields' => $displayFields,
                 'route_name' => $routeName,
                 'is_modal' => $modalForm
             ],
         ];
+        if (!$filterClassNameDetails) {
+            unset($templates['_filters']);
+        }
 
         $generator->generateController(
             $controllerClassDetails->getFullName(),
@@ -168,14 +186,14 @@ class ControllerRenderer extends AbstractRenderer
                     'entity_class_name' => $entityClassDetails->getShortName(),
                     'form_full_class_name' => $formClassDetails->getFullName(),
                     'form_class_name' => $formClassDetails->getShortName(),
-                    'route_path' => Str::asRoutePath($controllerClassDetails->getRelativeNameWithoutSuffix()),
+                    'route_path' => Str::asRoutePath($routeBase),
                     'route_name' => $routeName,
                     'templates_path' => $templatesPath,
                     'entity_var_plural' => $entityVarPlural,
                     'entity_twig_var_plural' => $entityTwigVarPlural,
                     'entity_var_singular' => $entityVarSingular,
                     'entity_twig_var_singular' => $entityTwigVarSingular,
-                    'entity_identifier' => $entityDoctrineDetails->getIdentifier(),
+                    'entity_identifier' => $identifier,
                 ],
                 $repositoryVars
             )
@@ -192,43 +210,28 @@ class ControllerRenderer extends AbstractRenderer
         }
         
         if ($filterClassNameDetails) {
-            $identifierField = null;
-            if (null !== $entityDoctrineDetails) {
-                $formFields = $entityDoctrineDetails->getFormFields();
-                $identifierField = $entityDoctrineDetails->getIdentifier();
-            } else {
-                $classDetails = new ClassDetails($entityDoctrineDetails->getFullName());
-                $formFields = $classDetails->getFormFields();
-            }
-
             $this->filterTypeRenderer->render(
                 $generator,
                 $filterClassNameDetails,
-                $formFields,
+                $entityDoctrineDetails->getFormFields(),
                 $entityClassDetails,
-                $identifierField
+                $identifier,
+                [],
+                [],
+                $displayFields
             );
         }
-            
         
         return $controllerClassDetails;
     }
     
     private function pluralize(string $word): string
     {
-        if (null !== $this->inflector) {
-            return $this->inflector->pluralize($word);
-        }
-
-        return LegacyInflector::pluralize($word);
+        return $this->inflector->pluralize($word);
     }
 
     private function singularize(string $word): string
     {
-        if (null !== $this->inflector) {
-            return $this->inflector->singularize($word);
-        }
-
-        return LegacyInflector::singularize($word);
+        return $this->inflector->singularize($word);
     }
 }

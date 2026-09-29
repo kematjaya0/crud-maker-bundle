@@ -21,10 +21,16 @@ abstract class AbstractRenderer
      */
     protected $basePath = [];
     
+    /**
+     * 
+     * @var array
+     */
+    protected $config = [];
+    
     public function __construct(ContainerBagInterface $bag) 
     {
-        $configs = $bag->get('crud_maker');
-        $path = (null !== $configs['templates']['path']) ? [$configs['templates']['path']] : [];
+        $this->config = $bag->get('crud_maker');
+        $path = (null !== $this->config['templates']['path']) ? [$this->config['templates']['path']] : [];
         $this->basePath = array_merge($path, [dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'skeleton']);
     }
     
@@ -32,6 +38,42 @@ abstract class AbstractRenderer
     {
         return $this->basePath;
     }
+    
+    /**
+     * crud_maker configuration
+     * 
+     * @return array
+     */
+    public function getConfig():array
+    {
+        return $this->config;
+    }
+    
+    /**
+     * Available view themes (directory inside crud/views)
+     * 
+     * @return array
+     */
+    public function getAvailableThemes():array 
+    {
+        $themes = [];
+        foreach ($this->getBasePath() as $path) {
+            $dir = $path . DIRECTORY_SEPARATOR . 'crud' . DIRECTORY_SEPARATOR . 'views';
+            if (!is_dir($dir)) {
+                continue;
+            }
+            
+            $themes = array_merge($themes, array_filter(scandir($dir), function (string $name) use ($dir) {
+                return "." !== $name and ".." !== $name and is_dir($dir . DIRECTORY_SEPARATOR . $name);
+            }));
+        }
+        
+        $themes = array_values(array_unique($themes));
+        sort($themes);
+        
+        return $themes;
+    }
+    
     /**
      * 
      * @param string $filename

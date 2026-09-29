@@ -16,8 +16,11 @@ use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
 use Symfony\Bundle\MakerBundle\DependencyBuilder;
 use Symfony\Bundle\MakerBundle\Generator;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Route;
 use Symfony\Component\BrowserKit\History;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestAssertionsTrait;
+use Symfony\Component\Panther\PantherTestCaseTrait;
+use Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer;
 use Symfony\Component\CssSelector\CssSelectorConverter;
 use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
 use Symfony\Bundle\MakerBundle\Validator;
@@ -29,15 +32,24 @@ use Symfony\Bundle\MakerBundle\Validator;
  */
 final class CRUDUnitTestMaker extends AbstractMaker
 {
+    use InputArgumentTrait;
+    
     /**
      * 
      * @var DoctrineHelper
      */
     private $doctrineHelper;
     
-    public function __construct(DoctrineHelper $doctrineHelper) 
+    /**
+     * 
+     * @var ControllerRenderer
+     */
+    private $controllerRenderer;
+    
+    public function __construct(DoctrineHelper $doctrineHelper, ControllerRenderer $controllerRenderer) 
     {
         $this->doctrineHelper = $doctrineHelper;
+        $this->controllerRenderer = $controllerRenderer;
     }
     
     public static function getCommandName(): string
@@ -45,18 +57,26 @@ final class CRUDUnitTestMaker extends AbstractMaker
         return 'make:kmj-functional-test';
     }
     
-    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) 
+    public static function getCommandDescription(): string
     {
+        return 'generator for functional test of CRUD controller';
+    }
+    
+    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
+    {
+        $entityConfig = $this->controllerRenderer->getConfig()['entity'];
         $entityClassDetails = $generator->createClassNameDetails(
             Validator::entityExists($input->getArgument('entity-class'), $this->doctrineHelper->getEntitiesForAutocomplete()),
-            'Entity\\'
+            $entityConfig['namespace_prefix'],
+            $entityConfig['suffix']
         );
         
         $testClassNameDetails = $generator->createClassNameDetails(
-            $input->getArgument('entity-class'),
+            $entityClassDetails->getRelativeNameWithoutSuffix(),
             'Tests\\Controller\\',
             'ControllerTest'
         );
+        $entityDoctrineDetails = $this->doctrineHelper->createDoctrineDetails($entityClassDetails->getFullName());
         
         $baseTemplatePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'skeleton';
         
@@ -68,10 +88,11 @@ final class CRUDUnitTestMaker extends AbstractMaker
                 'entity_var_singular' => lcfirst($entityClassDetails->getShortName()), 
                 'entity_class_name' => $entityClassDetails->getShortName(),
                 'route_name' => Str::asRouteName($entityClassDetails->getRelativeNameWithoutSuffix()),
+                'entity_identifier' => $entityDoctrineDetails ? $entityDoctrineDetails->getIdentifier() : 'id',
                 'web_assertions_are_available' => trait_exists(WebTestAssertionsTrait::class),
                 'panther_is_available' => trait_exists(PantherTestCaseTrait::class),
-                'include_filter' => $input->getArgument('include-filter'),
-                'is_modal' => $input->getArgument('modal-form')
+                'include_filter' => $this->isYes($input->getArgument('include-filter')),
+                'is_modal' => $this->isYes($input->getArgument('modal-form'))
             ]
         );
         
@@ -85,7 +106,7 @@ final class CRUDUnitTestMaker extends AbstractMaker
         ]);
     }
     
-    public function configureCommand(Command $command, InputConfiguration $inputConfig)
+    public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $command
             ->setDescription('Creates a new unit test class for CRUD controller')
@@ -99,7 +120,7 @@ final class CRUDUnitTestMaker extends AbstractMaker
         $inputConfig->setArgumentAsNonInteractive('modal-form');
     }
     
-    public function interact(InputInterface $input, ConsoleStyle $io, Command $command)
+    public function interact(InputInterface $input, ConsoleStyle $io, Command $command): void
     {
         if (null === $input->getArgument('entity-class')) {
             $argument = $command->getDefinition()->getArgument('entity-class');
@@ -117,19 +138,17 @@ final class CRUDUnitTestMaker extends AbstractMaker
         if (null === $input->getArgument('include-filter')) {
             $argument = $command->getDefinition()->getArgument('include-filter');
             $question = new Question($argument->getDescription(), 'no');
-            $value = $io->askQuestion($question);
-            $input->setArgument('include-filter', 'y' == strtolower($value) or 'yes' == strtolower($value) ? true: false);
+            $input->setArgument('include-filter', $io->askQuestion($question));
         }
         
         if (null === $input->getArgument('modal-form')) {
             $argument = $command->getDefinition()->getArgument('modal-form');
             $question = new Question($argument->getDescription(), 'no');
-            $value = $io->askQuestion($question);
-            $input->setArgument('modal-form', 'y' == strtolower($value) or 'yes' == strtolower($value) ? true: false);
+            $input->setArgument('modal-form', $io->askQuestion($question));
         }
     }
     
-    public function configureDependencies(DependencyBuilder $dependencies) 
+    public function configureDependencies(DependencyBuilder $dependencies): void
     {
         $dependencies->addClassDependency(
             Route::class,

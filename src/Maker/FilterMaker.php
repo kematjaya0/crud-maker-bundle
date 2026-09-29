@@ -37,10 +37,10 @@ final class FilterMaker extends AbstractMaker
         $this->filterTypeRenderer = $filterTypeRenderer;
     }
     
-    public function configureCommand(Command $command, InputConfiguration $inputConfig) 
+    public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $command
-            ->setDescription('Creates a new form filter class by lexik form filter bundle')
+            ->setDescription('Creates a new form filter class by SpiriitLabs form filter bundle')
             ->addArgument('name', InputArgument::OPTIONAL, sprintf('The name of the filter class (e.g. <fg=yellow>%sFilterType</>)', Str::asClassName(Str::getRandomTerm())))
             ->addArgument('bound-class', InputArgument::OPTIONAL, 'The name of Entity or fully qualified model class name that the new form will be bound to (empty for none)')
         ;
@@ -48,12 +48,12 @@ final class FilterMaker extends AbstractMaker
         $inputConfig->setArgumentAsNonInteractive('bound-class');
     }
 
-    public function configureDependencies(DependencyBuilder $dependencies) 
+    public function configureDependencies(DependencyBuilder $dependencies): void
     {
         
     }
 
-    public function interact(InputInterface $input, ConsoleStyle $io, Command $command)
+    public function interact(InputInterface $input, ConsoleStyle $io, Command $command): void
     {
         if (null === $input->getArgument('bound-class')) {
             $argument = $command->getDefinition()->getArgument('bound-class');
@@ -69,28 +69,32 @@ final class FilterMaker extends AbstractMaker
         }
     }
     
-    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) 
+    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
     {
+        $config = $this->filterTypeRenderer->getConfig();
         $formClassNameDetails = $generator->createClassNameDetails(
             $input->getArgument('name'),
-            'Filter\\',
-            'FilterType'
+            $config['filter']['namespace_prefix'],
+            $config['filter']['suffix']
         );
         
         $formFields = ['field_name' => null];
+        $fieldMappings = [];
+        $identifierField = null;
 
         $boundClass = $input->getArgument('bound-class');
         $boundClassDetails = null;
         if (null !== $boundClass) {
             $boundClassDetails = $generator->createClassNameDetails(
                 $boundClass,
-                'Entity\\'
+                $config['entity']['namespace_prefix'],
+                $config['entity']['suffix']
             );
 
             $doctrineEntityDetails = $this->entityHelper->createDoctrineDetails($boundClassDetails->getFullName());
-            $identifierField = null;
             if (null !== $doctrineEntityDetails) {
                 $formFields = $doctrineEntityDetails->getFormFields();
+                $fieldMappings = $doctrineEntityDetails->getDisplayFields();
                 $identifierField = $doctrineEntityDetails->getIdentifier();
             } else {
                 $classDetails = new ClassDetails($boundClassDetails->getFullName());
@@ -103,7 +107,10 @@ final class FilterMaker extends AbstractMaker
             $formClassNameDetails,
             $formFields,
             $boundClassDetails,
-            $identifierField
+            $identifierField,
+            [],
+            [],
+            $fieldMappings
         );
         
         $generator->writeChanges();
@@ -112,7 +119,7 @@ final class FilterMaker extends AbstractMaker
 
         $io->text([
             'Next: Add fields to your filter and start using it.',
-            'Find the documentation at <fg=yellow>https://github.com/lexik/LexikFormFilterBundle</>',
+            'Find the documentation at <fg=yellow>https://github.com/SpiriitLabs/form-filter-bundle</>',
         ]);
     }
 
@@ -125,8 +132,8 @@ final class FilterMaker extends AbstractMaker
      * 
      * @return string
      */
-    public static function getCommandDescription()
+    public static function getCommandDescription(): string
     {
-        return 'generator for lexik filter class';
+        return 'generator for filter class from SpiriitLabs form filter bundle';
     }
 }
