@@ -7,19 +7,19 @@
 namespace Kematjaya\CrudMakerBundle\Maker;
 
 use Kematjaya\CrudMakerBundle\Renderer\FilterTypeRenderer;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Question\Question;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\DependencyBuilder;
-use Symfony\Bundle\MakerBundle\InputConfiguration;
+use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
 use Symfony\Bundle\MakerBundle\Generator;
+use Symfony\Bundle\MakerBundle\InputConfiguration;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
 use Symfony\Bundle\MakerBundle\Str;
-use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
-use Symfony\Bundle\MakerBundle\Validator;
 use Symfony\Bundle\MakerBundle\Util\ClassDetails;
+use Symfony\Bundle\MakerBundle\Validator;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Question\Question;
 
 /**
  * @package App\Maker
@@ -28,15 +28,11 @@ use Symfony\Bundle\MakerBundle\Util\ClassDetails;
  */
 final class FilterMaker extends AbstractMaker
 {
-    private $entityHelper;
-    private $filterTypeRenderer;
-    
-    public function __construct(DoctrineHelper $entityHelper, FilterTypeRenderer $filterTypeRenderer) 
-    {
-        $this->entityHelper = $entityHelper;
-        $this->filterTypeRenderer = $filterTypeRenderer;
-    }
-    
+    public function __construct(
+        private readonly DoctrineHelper $entityHelper,
+        private readonly FilterTypeRenderer $filterTypeRenderer,
+    ) {}
+
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $command
@@ -48,10 +44,7 @@ final class FilterMaker extends AbstractMaker
         $inputConfig->setArgumentAsNonInteractive('bound-class');
     }
 
-    public function configureDependencies(DependencyBuilder $dependencies): void
-    {
-        
-    }
+    public function configureDependencies(DependencyBuilder $dependencies): void {}
 
     public function interact(InputInterface $input, ConsoleStyle $io, Command $command): void
     {
@@ -61,14 +54,14 @@ final class FilterMaker extends AbstractMaker
             $entities = $this->entityHelper->getEntitiesForAutocomplete();
 
             $question = new Question($argument->getDescription());
-            $question->setValidator(function ($answer) use ($entities) {return Validator::existsOrNull($answer, $entities); });
+            $question->setValidator(fn(?string $answer): ?string => Validator::existsOrNull($answer, $entities));
             $question->setAutocompleterValues($entities);
             $question->setMaxAttempts(3);
 
             $input->setArgument('bound-class', $io->askQuestion($question));
         }
     }
-    
+
     public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
     {
         $config = $this->filterTypeRenderer->getConfig();
@@ -77,7 +70,7 @@ final class FilterMaker extends AbstractMaker
             $config['filter']['namespace_prefix'],
             $config['filter']['suffix']
         );
-        
+
         $formFields = ['field_name' => null];
         $fieldMappings = [];
         $identifierField = null;
@@ -101,7 +94,7 @@ final class FilterMaker extends AbstractMaker
                 $formFields = $classDetails->getFormFields();
             }
         }
-        
+
         $this->filterTypeRenderer->render(
             $generator,
             $formClassNameDetails,
@@ -112,7 +105,7 @@ final class FilterMaker extends AbstractMaker
             [],
             $fieldMappings
         );
-        
+
         $generator->writeChanges();
 
         $this->writeSuccessMessage($io);
@@ -123,15 +116,11 @@ final class FilterMaker extends AbstractMaker
         ]);
     }
 
-    public static function getCommandName(): string 
+    public static function getCommandName(): string
     {
         return 'make:kmj-filter';
     }
 
-    /**
-     * 
-     * @return string
-     */
     public static function getCommandDescription(): string
     {
         return 'generator for filter class from SpiriitLabs form filter bundle';

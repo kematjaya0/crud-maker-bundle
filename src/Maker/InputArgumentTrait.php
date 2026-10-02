@@ -11,16 +11,13 @@ trait InputArgumentTrait
 {
     /**
      * "y", "yes", "true", "1" => true, selain itu false
-     * 
-     * @param  mixed $value
-     * @return bool
      */
-    protected function isYes($value): bool
+    protected function isYes(mixed $value): bool
     {
         if (is_bool($value)) {
             return $value;
         }
-        
+
         return in_array(strtolower(trim((string) $value)), ['y', 'yes', 'true', '1'], true);
     }
 }

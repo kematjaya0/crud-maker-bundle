@@ -20,21 +20,15 @@ final class FilterTypeRenderer extends AbstractRenderer
     /**
      * Doctrine type yang tidak bisa difilter
      */
-    const SKIPPED_TYPES = ['json', 'array', 'simple_array', 'object', 'blob', 'binary'];
-    
+    public const array SKIPPED_TYPES = ['json', 'array', 'simple_array', 'object', 'blob', 'binary'];
+
     /**
      * Render filter type class
-     * 
-     * @param Generator             $generator
-     * @param ClassNameDetails      $formClassDetails
+     *
      * @param array                 $formFields       EntityDetails::getFormFields()
-     * @param ClassNameDetails|null $boundClassDetails
-     * @param string|null           $identifierField
-     * @param array                 $extraUseClasses
-     * @param array                 $constraintClasses
      * @param array                 $fieldMappings    EntityDetails::getDisplayFields(), untuk menentukan tipe filter
      */
-    public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ?ClassNameDetails $boundClassDetails = null, ?string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = [], array $fieldMappings = [])
+    public function render(Generator $generator, ClassNameDetails $formClassDetails, array $formFields, ?ClassNameDetails $boundClassDetails = null, ?string $identifierField = null, array $extraUseClasses = [], array $constraintClasses = [], array $fieldMappings = []): void
     {
         $generator->generateClass(
             $formClassDetails->getFullName(),
@@ -45,89 +39,68 @@ final class FilterTypeRenderer extends AbstractRenderer
                 'form_fields' => $this->buildFilterFields($formFields, $fieldMappings, $identifierField),
                 'field_type_use_statements' => $extraUseClasses,
                 'constraint_use_statements' => $constraintClasses,
-                'identifier' => $identifierField
+                'identifier' => $identifierField,
             ]
         );
     }
-    
+
     /**
      * Filter fields: [name => ['type' => short filter type class, 'options_code' => string]]
-     * 
-     * @param  array       $formFields
-     * @param  array       $fieldMappings
-     * @param  string|null $identifierField
-     * @return array
      */
-    public function buildFilterFields(array $formFields, array $fieldMappings = [], ?string $identifierField = null):array
+    public function buildFilterFields(array $formFields, array $fieldMappings = [], ?string $identifierField = null): array
     {
         $fields = [];
         foreach ($formFields as $name => $fieldTypeOptions) {
             if (null !== $identifierField && $name === $identifierField) {
                 continue;
             }
-            
+
             if (is_array($fieldTypeOptions) && EntityType::class === ($fieldTypeOptions['type'] ?? null)) {
                 $fields[$name] = $this->getEntityFieldTypeOptions($fieldTypeOptions);
                 continue;
             }
-            
+
             $mapping = $fieldMappings[$name] ?? null;
             $doctrineType = null;
             if (null !== $mapping) {
                 $doctrineType = is_array($mapping) ? ($mapping['type'] ?? null) : ($mapping->type ?? null);
             }
-            
+
             if (in_array($doctrineType, self::SKIPPED_TYPES, true)) {
                 continue;
             }
-            
+
             $fields[$name] = $this->getFieldTypeOptions(['type' => $doctrineType]);
         }
-        
+
         return $fields;
     }
-    
-    protected function getFieldTypeOptions(array $fieldTypeOptions)
+
+    protected function getFieldTypeOptions(array $fieldTypeOptions): array
     {
-        switch ($fieldTypeOptions['type']) {
-            case 'boolean':
-                return ['type' => 'BooleanFilterType', 'options_code' => ''];
-            case 'integer':
-            case 'smallint':
-            case 'bigint':
-            case 'decimal':
-            case 'float':
-                return ['type' => 'NumberFilterType', 'options_code' => ''];
-            case 'date':
-            case 'date_immutable':
-            case 'datetime':
-            case 'datetime_immutable':
-            case 'datetimetz':
-            case 'datetimetz_immutable':
-                return ['type' => 'DateRangeFilterType', 'options_code' => "'left_date_options' => ['widget' => 'single_text'],\n            'right_date_options' => ['widget' => 'single_text'],"];
-        }
-        
-        return ['type' => 'TextFilterType', 'options_code' => "'condition_pattern' => FilterOperands::STRING_CONTAINS,"];
+        return match ($fieldTypeOptions['type']) {
+            'boolean' => ['type' => 'BooleanFilterType', 'options_code' => ''],
+            'integer', 'smallint', 'bigint', 'decimal', 'float' => ['type' => 'NumberFilterType', 'options_code' => ''],
+            'date', 'date_immutable', 'datetime', 'datetime_immutable', 'datetimetz', 'datetimetz_immutable' => ['type' => 'DateRangeFilterType', 'options_code' => "'left_date_options' => ['widget' => 'single_text'],\n            'right_date_options' => ['widget' => 'single_text'],"],
+            default => ['type' => 'TextFilterType', 'options_code' => "'condition_pattern' => FilterOperands::STRING_CONTAINS,"],
+        };
     }
-    
+
     /**
      * Relation (many to one / many to many) memakai EntityFilterType
-     * 
-     * @param  array $fieldTypeOptions
-     * @return array
      */
-    protected function getEntityFieldTypeOptions(array $fieldTypeOptions):array
+    protected function getEntityFieldTypeOptions(array $fieldTypeOptions): array
     {
         $targetEntity = $fieldTypeOptions['extra_use_classes'][0] ?? null;
         if (null === $targetEntity) {
             return ['type' => 'TextFilterType', 'options_code' => "'condition_pattern' => FilterOperands::STRING_CONTAINS,"];
         }
-        
+
         $options = sprintf("'class' => \\%s::class,", ltrim($targetEntity, '\\'));
-        if (false !== strpos((string) ($fieldTypeOptions['options_code'] ?? ''), "'multiple' => true")) {
+        if (str_contains((string) ($fieldTypeOptions['options_code'] ?? ''), "'multiple' => true")) {
             $options .= "\n            'multiple' => true,";
         }
-        
+
         return ['type' => 'EntityFilterType', 'options_code' => $options];
     }
 }

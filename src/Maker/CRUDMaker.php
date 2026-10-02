@@ -6,26 +6,25 @@
 
 namespace Kematjaya\CrudMakerBundle\Maker;
 
+use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer;
-use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
-use Symfony\Bundle\MakerBundle\InputConfiguration;
-use Symfony\Bundle\MakerBundle\DependencyBuilder;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
+use Symfony\Bundle\MakerBundle\DependencyBuilder;
+use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
 use Symfony\Bundle\MakerBundle\Generator;
+use Symfony\Bundle\MakerBundle\InputConfiguration;
+use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
 use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Validator;
-use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
-use Symfony\Component\Console\Question\Question;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Routing\Route;
-use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Validator\Validation;
 use Symfony\Bundle\TwigBundle\TwigBundle;
-use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Question\Question;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Routing\Route;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
-
+use Symfony\Component\Validator\Validation;
 
 /**
  * @package App\Maker\Maker
@@ -35,26 +34,12 @@ use Symfony\Component\Security\Csrf\CsrfTokenManager;
 final class CRUDMaker extends AbstractMaker
 {
     use InputArgumentTrait;
-    
-    /**
-     * 
-     * @var ControllerRenderer
-     */
-    private $controllerRenderer;
-    
-    
-    /**
-     * 
-     * @var DoctrineHelper
-     */
-    private $doctrineHelper;
-    
-    public function __construct(ControllerRenderer $controllerRenderer, DoctrineHelper $doctrineHelper) 
-    {
-        $this->controllerRenderer = $controllerRenderer;
-        $this->doctrineHelper = $doctrineHelper;
-    }
-    
+
+    public function __construct(
+        private readonly ControllerRenderer $controllerRenderer,
+        private readonly DoctrineHelper $doctrineHelper,
+    ) {}
+
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $command
@@ -86,14 +71,14 @@ final class CRUDMaker extends AbstractMaker
 
             $input->setArgument('entity-class', $value);
         }
-        
+
         if (null === $input->getArgument('namespace')) {
             $argument = $command->getDefinition()->getArgument('namespace');
             $question = new Question($argument->getDescription());
             $value = $io->askQuestion($question);
-            $input->setArgument('namespace', null !== $value ? $value : "-");
+            $input->setArgument('namespace', $value ?? "-");
         }
-        
+
         if (null === $input->getArgument('theme')) {
             $argument = $command->getDefinition()->getArgument('theme');
             $question = new Question($argument->getDescription(), $this->controllerRenderer->getConfig()['templates']['theme']);
@@ -101,27 +86,27 @@ final class CRUDMaker extends AbstractMaker
             $value = $io->askQuestion($question);
             $input->setArgument('theme', $value);
         }
-        
+
         if (null === $input->getArgument('include-filter')) {
             $argument = $command->getDefinition()->getArgument('include-filter');
             $question = new Question($argument->getDescription(), 'no');
             $input->setArgument('include-filter', $io->askQuestion($question));
         }
-        
+
         if (null === $input->getArgument('modal-form')) {
             $argument = $command->getDefinition()->getArgument('modal-form');
             $question = new Question($argument->getDescription(), 'no');
             $input->setArgument('modal-form', $io->askQuestion($question));
         }
     }
-    
+
     public function configureDependencies(DependencyBuilder $dependencies): void
     {
         $dependencies->addClassDependency(
             Route::class,
             'router'
         );
-        
+
         $dependencies->addClassDependency(
             AbstractType::class,
             'form'
@@ -156,16 +141,16 @@ final class CRUDMaker extends AbstractMaker
             $entityConfig['namespace_prefix'],
             $entityConfig['suffix']
         );
-        
+
         $controllerClassDetails = $this->controllerRenderer->generate(
-            $entityClassDetails, 
-            $generator, 
+            $entityClassDetails,
+            $generator,
             $input->getArgument('namespace'),
             $input->getArgument('theme'),
             $this->isYes($input->getArgument('include-filter')),
             $this->isYes($input->getArgument('modal-form'))
         );
-        
+
         $generator->writeChanges();
 
         $this->writeSuccessMessage($io);
@@ -175,15 +160,11 @@ final class CRUDMaker extends AbstractMaker
         $io->text(sprintf('Next: Check your new CRUD by going to <fg=yellow>%s.html</>', Str::asRoutePath($routeBase)));
     }
 
-    public static function getCommandName(): string 
+    public static function getCommandName(): string
     {
         return 'make:kmj-crud';
     }
 
-    /**
-     * 
-     * @return string
-     */
     public static function getCommandDescription(): string
     {
         return 'generator for crud with bootstrap';

@@ -7,7 +7,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer;
 use Kematjaya\CrudMakerBundle\Tests\Fixtures\App\Kernel;
-use Spiriit\Bundle\FormFilterBundle\Filter\FilterBuilderUpdaterInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Routing\AttributeRouteControllerLoader;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -25,7 +24,7 @@ use Twig\TwigFunction;
  */
 class MakerTest extends KernelTestCase
 {
-    const GENERATED = ['src/Controller', 'src/Form', 'src/Filter', 'templates', 'tests'];
+    public const GENERATED = ['src/Controller', 'src/Form', 'src/Filter', 'templates', 'tests'];
 
     protected static function getKernelClass(): string
     {
@@ -79,8 +78,8 @@ class MakerTest extends KernelTestCase
     {
         $this->assertFileExists($file);
         $twig = new Environment(new ArrayLoader());
-        $twig->registerUndefinedFunctionCallback(fn (string $name) => new TwigFunction($name, fn () => ''));
-        $twig->registerUndefinedFilterCallback(fn (string $name) => new TwigFilter($name, fn ($value) => $value));
+        $twig->registerUndefinedFunctionCallback(fn(string $name): TwigFunction => new TwigFunction($name, fn(): string => ''));
+        $twig->registerUndefinedFilterCallback(fn(string $name): TwigFilter => new TwigFilter($name, fn($value) => $value));
         $twig->parse($twig->tokenize(new Source(file_get_contents($file), basename($file))));
     }
 
@@ -90,7 +89,7 @@ class MakerTest extends KernelTestCase
         $this->assertTrue(class_exists($class, false), $class);
     }
 
-    public function testCrudWithRepositoryAndFilter()
+    public function testCrudWithRepositoryAndFilter(): void
     {
         $tester = $this->runMaker('make:kmj-crud', [
             'entity-class' => 'Product',
@@ -150,7 +149,7 @@ class MakerTest extends KernelTestCase
         $this->assertStringContainsString("include('product/_filters.html.twig'", $index);
     }
 
-    public function testCrudWithoutRepositoryModalAndNamespace()
+    public function testCrudWithoutRepositoryModalAndNamespace(): void
     {
         $this->runMaker('make:kmj-crud', [
             'entity-class' => 'Category',
@@ -181,7 +180,7 @@ class MakerTest extends KernelTestCase
         $this->assertSame('/admin/category/{code}/show.html', $routes->get('app_admin_category_show')->getPath());
     }
 
-    public function testExistingFormTypeIsNotRegenerated()
+    public function testExistingFormTypeIsNotRegenerated(): void
     {
         (new Filesystem())->dumpFile($this->path('src/Form/CategoryType.php'), "<?php\n\nnamespace App\Form;\n\nclass CategoryType extends \\Symfony\\Component\\Form\\AbstractType\n{\n}\n");
 
@@ -198,7 +197,7 @@ class MakerTest extends KernelTestCase
         $this->assertStringContainsString('pull-right', file_get_contents($this->path('templates/category/index.html.twig')));
     }
 
-    public function testUnknownTheme()
+    public function testUnknownTheme(): void
     {
         $application = new Application(static::bootKernel());
         $tester = new CommandTester($application->find('make:kmj-crud'));
@@ -208,7 +207,7 @@ class MakerTest extends KernelTestCase
         $tester->execute(['entity-class' => 'Product', 'namespace' => '-', 'include-filter' => 'no', 'modal-form' => 'no', 'theme' => 'bootstrap-9'], ['interactive' => false]);
     }
 
-    public function testFilterMaker()
+    public function testFilterMaker(): void
     {
         $this->runMaker('make:kmj-filter', ['name' => 'ProductSearch', 'bound-class' => 'Product']);
 
@@ -217,7 +216,7 @@ class MakerTest extends KernelTestCase
         $this->assertStringContainsString('class ProductSearchFilterType extends AbstractFilterType', file_get_contents($file));
     }
 
-    public function testFunctionalTestMaker()
+    public function testFunctionalTestMaker(): void
     {
         $this->runMaker('make:kmj-functional-test', ['entity-class' => 'Category', 'include-filter' => 'no', 'modal-form' => 'yes']);
 
@@ -229,7 +228,7 @@ class MakerTest extends KernelTestCase
         $this->assertStringContainsString('parent::ajaxForm', $content);
     }
 
-    public function testThemes()
+    public function testThemes(): void
     {
         $renderer = static::getContainer()->get('test.controller_renderer');
 

@@ -55,7 +55,7 @@ crud_maker:
 
 ## Test
 ```
-LOCAL_PACKAGES="base-controller-bundle@6.4.0" sh docker/test.sh all
+LOCAL_PACKAGES="base-controller-bundle@6.4.0" sh ../test.sh crud-maker-bundle all
 ```
 
 thank to:
