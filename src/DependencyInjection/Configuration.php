@@ -1,10 +1,14 @@
 <?php
 
+/**
+ * This file is part of the crud-maker-bundle.
+ */
+
 namespace Kematjaya\CrudMakerBundle\DependencyInjection;
 
-use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Builder\NodeBuilder;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
+use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 /**
  * @package Kematjaya\CrudMakerBundle\DependencyInjection
@@ -13,20 +17,19 @@ use Symfony\Component\Config\Definition\Builder\TreeBuilder;
  */
 class Configuration implements ConfigurationInterface
 {
-    
-    public function getConfigTreeBuilder(): TreeBuilder 
+    public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('crud_maker');
         $rootNode = $treeBuilder->getRootNode();
-        
+
         $this->addEntityConfiguration($rootNode->children());
         $this->addFilterConfiguration($rootNode->children());
         $this->addTemplateConfiguration($rootNode->children());
-        
+
         return $treeBuilder;
     }
 
-    public function addEntityConfiguration(NodeBuilder $node):void
+    public function addEntityConfiguration(NodeBuilder $node): void
     {
         $node
             ->arrayNode('entity')
@@ -39,8 +42,8 @@ class Configuration implements ConfigurationInterface
                 ->end()
             ->end();
     }
-    
-    public function addFilterConfiguration(NodeBuilder $node):void
+
+    public function addFilterConfiguration(NodeBuilder $node): void
     {
         $node
             ->arrayNode('filter')
@@ -53,8 +56,8 @@ class Configuration implements ConfigurationInterface
                 ->end()
             ->end();
     }
-    
-    public function addTemplateConfiguration(NodeBuilder $node):void
+
+    public function addTemplateConfiguration(NodeBuilder $node): void
     {
         $node
             ->arrayNode('templates')
@@ -62,6 +65,7 @@ class Configuration implements ConfigurationInterface
                 ->addDefaultsIfNotSet()
                     ->children()
                         ->scalarNode('path')->defaultValue(null)->end()
+                        ->scalarNode('theme')->defaultValue('bootstrap-4')->end()
                     ->end()
                 ->end()
             ->end();

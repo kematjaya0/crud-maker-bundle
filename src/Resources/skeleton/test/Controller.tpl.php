@@ -2,12 +2,12 @@
 
 namespace <?= $namespace; ?>;
 
-use <?= $entity_full_class_name ?>; 
+use <?= $entity_full_class_name ?>;
 use Kematjaya\BaseControllerBundle\FunctionalTest\Controller\AbstractCRUDControllerTest;
 
 class <?= $class_name ?> extends AbstractCRUDControllerTest <?= "\n" ?>
 {
-    protected function buildObject() 
+    protected function buildObject(): <?= $entity_class_name ?>
     {
         $<?= $entity_var_singular ?> = $this->doctrine->getRepository(<?= $entity_class_name ?>::class)->createQueryBuilder('t')
                 ->setMaxResults(1)->getQuery()->getOneOrNullResult();
@@ -19,7 +19,7 @@ class <?= $class_name ?> extends AbstractCRUDControllerTest <?= "\n" ?>
         return $<?= $entity_var_singular ?>;
     }
     
-    public function testIndex()
+    public function testIndex(): void
     {
         <?php if ($include_filter):?>
         parent::doIndex($this->router->generate('<?= $route_name ?>_index'), true);
@@ -28,14 +28,14 @@ class <?= $class_name ?> extends AbstractCRUDControllerTest <?= "\n" ?>
         <?php endif ?>
     }
     
-    public function testCreate()
+    public function testCreate(): void
     {
         $data = $this->buildObject();
         $post = [
             // set post data 
         ];
         
-        $url = $this->generate('<?= $route_name ?>_new');
+        $url = $this->generate('<?= $route_name ?>_create');
         <?php if ($is_modal):?>
         parent::ajaxForm($url, $post);
         <?php else: ?>
@@ -43,14 +43,14 @@ class <?= $class_name ?> extends AbstractCRUDControllerTest <?= "\n" ?>
         <?php endif ?>
     }
     
-    public function testEdit()
+    public function testEdit(): void
     {
         $data = $this->buildObject();
         $post = [
             // set post data 
         ];
         
-        $url = $this->generate('<?= $route_name ?>_edit', ["id" => $data->getId()]);
+        $url = $this->generate('<?= $route_name ?>_edit', ['<?= $entity_identifier ?>' => $data->get<?= ucfirst($entity_identifier) ?>()]);
         <?php if ($is_modal):?>
         parent::ajaxForm($url, $post);
         <?php else: ?>
@@ -58,18 +58,18 @@ class <?= $class_name ?> extends AbstractCRUDControllerTest <?= "\n" ?>
         <?php endif ?>
     }
     
-    public function testShow()
+    public function testShow(): void
     {
         $data = $this->buildObject();
         
-        $url = $this->generate('<?= $route_name ?>_show', ["id" => $data->getId()]);
+        $url = $this->generate('<?= $route_name ?>_show', ['<?= $entity_identifier ?>' => $data->get<?= ucfirst($entity_identifier) ?>()]);
         parent::doShow($url, $data);
     }
     
-    public function testDelete()
+    public function testDelete(): void
     {
         $data = $this->buildObject();
-        $url = $this->generate('<?= $route_name ?>_delete', ["id" => $data->getId()]);
+        $url = $this->generate('<?= $route_name ?>_delete', ['<?= $entity_identifier ?>' => $data->get<?= ucfirst($entity_identifier) ?>()]);
         parent::doDelete($url, $data);
     }
 }

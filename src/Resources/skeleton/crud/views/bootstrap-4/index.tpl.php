@@ -60,7 +60,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="<?= $count ?>">{{ 'no_records_found'|trans }}</td>
+                    <td colspan="<?= $count + 1 ?>">{{ 'no_records_found'|trans }}</td>
                 </tr>
             {% endfor %}
             </tbody>

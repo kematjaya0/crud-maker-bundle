@@ -1,28 +1,30 @@
 <?php
 
+/**
+ * This file is part of the symfony.
+ */
+
 namespace Kematjaya\CrudMakerBundle\Maker;
 
+use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Kematjaya\CrudMakerBundle\Renderer\ControllerRenderer;
-use Symfony\Bundle\MakerBundle\Renderer\FormTypeRenderer;
-use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
-use Symfony\Bundle\MakerBundle\InputConfiguration;
-use Symfony\Bundle\MakerBundle\DependencyBuilder;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
+use Symfony\Bundle\MakerBundle\DependencyBuilder;
+use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
 use Symfony\Bundle\MakerBundle\Generator;
+use Symfony\Bundle\MakerBundle\InputConfiguration;
+use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
 use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Validator;
-use Symfony\Bundle\MakerBundle\Doctrine\DoctrineHelper;
-use Symfony\Component\Console\Question\Question;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Validator\Validation;
 use Symfony\Bundle\TwigBundle\TwigBundle;
-use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Question\Question;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Routing\Route;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
-
+use Symfony\Component\Validator\Validation;
 
 /**
  * @package App\Maker\Maker
@@ -31,34 +33,14 @@ use Symfony\Component\Security\Csrf\CsrfTokenManager;
  */
 final class CRUDMaker extends AbstractMaker
 {
-    
-    /**
-     * 
-     * @var ControllerRenderer
-     */
-    private $controllerRenderer;
-    
-    
-    /**
-     * 
-     * @var DoctrineHelper
-     */
-    private $doctrineHelper;
-    
-    /**
-     * 
-     * @var FormTypeRenderer
-     */
-    private $formTypeRenderer;
-    
-    public function __construct(ControllerRenderer $controllerRenderer, FormTypeRenderer $formTypeRenderer, DoctrineHelper $doctrineHelper) 
-    {
-        $this->controllerRenderer = $controllerRenderer;
-        $this->formTypeRenderer = $formTypeRenderer;
-        $this->doctrineHelper = $doctrineHelper;
-    }
-    
-    public function configureCommand(Command $command, InputConfiguration $inputConfig) 
+    use InputArgumentTrait;
+
+    public function __construct(
+        private readonly ControllerRenderer $controllerRenderer,
+        private readonly DoctrineHelper $doctrineHelper,
+    ) {}
+
+    public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $command
             ->setDescription('Creates CRUD for Doctrine entity class provide by kematjaya/crud-maker-bundle')
@@ -66,7 +48,7 @@ final class CRUDMaker extends AbstractMaker
             ->addArgument('namespace', InputArgument::OPTIONAL, sprintf("additional controller namespace (<fg=yellow>%s</>)", "enter if default"))
             ->addArgument('include-filter', InputArgument::OPTIONAL, sprintf('include filter ?'))
             ->addArgument('modal-form', InputArgument::OPTIONAL, sprintf('modal form ?'))
-            ->addArgument("theme", InputArgument::OPTIONAL, sprintf("view theme, available (<fg=yellow>%s</>)", implode(", ", $this->getAvailableThemes())))
+            ->addArgument("theme", InputArgument::OPTIONAL, sprintf("view theme, available (<fg=yellow>%s</>)", implode(", ", $this->controllerRenderer->getAvailableThemes())))
         ;
 
         $inputConfig->setArgumentAsNonInteractive('entity-class');
@@ -76,7 +58,7 @@ final class CRUDMaker extends AbstractMaker
         $inputConfig->setArgumentAsNonInteractive('theme');
     }
 
-    public function interact(InputInterface $input, ConsoleStyle $io, Command $command)
+    public function interact(InputInterface $input, ConsoleStyle $io, Command $command): void
     {
         if (null === $input->getArgument('entity-class')) {
             $argument = $command->getDefinition()->getArgument('entity-class');
@@ -89,43 +71,42 @@ final class CRUDMaker extends AbstractMaker
 
             $input->setArgument('entity-class', $value);
         }
-        
+
         if (null === $input->getArgument('namespace')) {
             $argument = $command->getDefinition()->getArgument('namespace');
             $question = new Question($argument->getDescription());
             $value = $io->askQuestion($question);
-            $input->setArgument('namespace', null !== $value ? $value : "-");
+            $input->setArgument('namespace', $value ?? "-");
         }
-        
+
         if (null === $input->getArgument('theme')) {
             $argument = $command->getDefinition()->getArgument('theme');
-            $question = new Question($argument->getDescription(), "bootstrap-4");
+            $question = new Question($argument->getDescription(), $this->controllerRenderer->getConfig()['templates']['theme']);
+            $question->setAutocompleterValues($this->controllerRenderer->getAvailableThemes());
             $value = $io->askQuestion($question);
             $input->setArgument('theme', $value);
         }
-        
+
         if (null === $input->getArgument('include-filter')) {
             $argument = $command->getDefinition()->getArgument('include-filter');
             $question = new Question($argument->getDescription(), 'no');
-            $value = $io->askQuestion($question);
-            $input->setArgument('include-filter', 'y' == strtolower($value) or 'yes' == strtolower($value) ? true: false);
+            $input->setArgument('include-filter', $io->askQuestion($question));
         }
-        
+
         if (null === $input->getArgument('modal-form')) {
             $argument = $command->getDefinition()->getArgument('modal-form');
             $question = new Question($argument->getDescription(), 'no');
-            $value = $io->askQuestion($question);
-            $input->setArgument('modal-form', 'y' == strtolower($value) or 'yes' == strtolower($value) ? true: false);
+            $input->setArgument('modal-form', $io->askQuestion($question));
         }
     }
-    
-    public function configureDependencies(DependencyBuilder $dependencies) 
+
+    public function configureDependencies(DependencyBuilder $dependencies): void
     {
         $dependencies->addClassDependency(
             Route::class,
             'router'
         );
-        
+
         $dependencies->addClassDependency(
             AbstractType::class,
             'form'
@@ -152,58 +133,40 @@ final class CRUDMaker extends AbstractMaker
         );
     }
 
-    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator) 
+    public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
     {
+        $entityConfig = $this->controllerRenderer->getConfig()['entity'];
         $entityClassDetails = $generator->createClassNameDetails(
             Validator::entityExists($input->getArgument('entity-class'), $this->doctrineHelper->getEntitiesForAutocomplete()),
-            'Entity\\'
+            $entityConfig['namespace_prefix'],
+            $entityConfig['suffix']
         );
-        
+
         $controllerClassDetails = $this->controllerRenderer->generate(
-            $entityClassDetails, 
-            $generator, 
+            $entityClassDetails,
+            $generator,
             $input->getArgument('namespace'),
             $input->getArgument('theme'),
-            $input->getArgument('include-filter'),
-            $input->getArgument('modal-form')
+            $this->isYes($input->getArgument('include-filter')),
+            $this->isYes($input->getArgument('modal-form'))
         );
-        
+
         $generator->writeChanges();
 
         $this->writeSuccessMessage($io);
 
-        $io->text(sprintf('Next: Check your new CRUD by going to <fg=yellow>%s/</>', Str::asRoutePath($controllerClassDetails->getRelativeNameWithoutSuffix())));
+        $namespace = trim((string) $input->getArgument('namespace'), " \\");
+        $routeBase = ('' !== $namespace && '-' !== $namespace ? $namespace . '\\' : '') . $controllerClassDetails->getRelativeNameWithoutSuffix();
+        $io->text(sprintf('Next: Check your new CRUD by going to <fg=yellow>%s.html</>', Str::asRoutePath($routeBase)));
     }
 
-    public static function getCommandName(): string 
+    public static function getCommandName(): string
     {
         return 'make:kmj-crud';
     }
 
-    /**
-     * 
-     * @return string
-     */
-    public static function getCommandDescription():string
+    public static function getCommandDescription(): string
     {
         return 'generator for crud with bootstrap';
-    }
-    
-    protected function getAvailableThemes():array 
-    {
-        $viewPath = "crud/views";
-        $themes = [];
-        foreach ($this->controllerRenderer->getBasePath() as $path) {
-            $dir = $path . DIRECTORY_SEPARATOR . $viewPath;
-            if (!is_dir($dir)) {
-                continue;
-            }
-            
-            $themes = array_merge($themes, array_filter(scandir($dir), function (string $name) {
-                return "." !== $name and ".." !== $name;
-            }));
-        }
-        
-        return array_unique($themes);
     }
 }

@@ -4,7 +4,11 @@
     <?php if (in_array($field, $fields_skip)):?>
         <?php continue; ?>
     <?php endif ?>
+    <?php if (in_array($field, $filter_fields)):?>
     <td>{{ form_widget(<?= $filter_name ?>.<?= $field ?>) }}</td>
+    <?php else: ?>
+    <td></td>
+    <?php endif ?>
     <?php endforeach; ?>
     <td>
         <button type="submit" name="submit" class="btn btn-outline-success btn-sm">

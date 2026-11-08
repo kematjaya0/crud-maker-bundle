@@ -1,4 +1,0 @@
-framework:
-    secret: 'xxxxx'
-    test: true
-    
